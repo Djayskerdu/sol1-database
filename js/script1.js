@@ -1552,19 +1552,22 @@ function startQRCamera() {
   if (stopBtn)     stopBtn.style.display  = '';
   if (html5QrScanner) { try { html5QrScanner.stop(); } catch(e){} html5QrScanner = null; }
 
-  setScanStatus('scanning', 'Camera starting… point at a SOL 1 QR code');
+  setScanStatus('scanning', 'Camera starting… hold your QR up to the screen');
 
   html5QrScanner = new Html5Qrcode('qr-reader');
   html5QrScanner.start(
     { facingMode: 'environment' },
-    { fps: 15, qrbox: { width: 230, height: 230 }, aspectRatio: 1.0 },
+    // Bigger box (most of the 300px reader area) so people can just hold their
+    // phone close without carefully lining it up — feels more like a "tap"
+    // than a "scan". Higher fps + faster internal detection = near-instant read.
+    { fps: 20, qrbox: { width: 270, height: 270 }, aspectRatio: 1.0, disableFlip: true },
     onQRCodeScanned,
     (errorMsg) => {
       // Called every frame when no QR found — only update if not in cooldown
-      if (!qrScanCooldown) setScanStatus('scanning', 'Scanning… point camera at QR code');
+      if (!qrScanCooldown) setScanStatus('scanning', 'Ready — hold QR close to the camera');
     }
   ).then(() => {
-    setScanStatus('scanning', 'Camera ready — point at a SOL 1 QR code');
+    setScanStatus('scanning', 'Ready — hold QR close to the camera');
   }).catch(err => {
     setScanStatus('error', 'Camera error: ' + err);
     showToast('Camera error: ' + err);
@@ -1700,6 +1703,25 @@ async function writeNFCTag(btnEl) {
   }
 }
 
+// ─── "Tap feel" feedback: a short beep + phone vibration on every read ───
+// Runs on ANY decoded QR (valid or not) so the person feels an immediate
+// physical response the instant their phone is close enough — same instant
+// feedback you'd get from a real NFC tap, minus needing NFC hardware.
+function playTapFeedback(success) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = success ? 880 : 300;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + (success ? 0.12 : 0.25));
+    setTimeout(() => ctx.close(), 400);
+  } catch (e) { /* audio not available — no big deal */ }
+  if (navigator.vibrate) navigator.vibrate(success ? 60 : [40, 60, 40]);
+}
+
 async function onQRCodeScanned(decodedText) {
   if (qrScanCooldown) return;
   qrScanCooldown = true;
@@ -1712,6 +1734,7 @@ async function onQRCodeScanned(decodedText) {
   }
 
   if (!decodedText.startsWith(QR_PREFIX)) {
+    playTapFeedback(false);
     setScanStatus('error', 'Invalid QR — only SOL 1 QR codes accepted');
     const resultEl = document.getElementById('qr-result');
     if (resultEl) resultEl.innerHTML = `
@@ -1722,20 +1745,21 @@ async function onQRCodeScanned(decodedText) {
     showToast('⚠️ Not a SOL 1 QR code');
     setTimeout(() => {
       qrScanCooldown = false;
-      setScanStatus('scanning', 'Scanning… point camera at QR code');
-    }, 3000);
+      setScanStatus('scanning', 'Ready — hold QR close to the camera');
+    }, 1500);
     return;
   }
 
   const personId = decodedText.slice(QR_PREFIX.length);
   const student  = APP.students.find(s => String(s['Student ID']) === String(personId));
-  if (student) { await scanQR(student['Student ID']); setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — scan next'); }, 3000); return; }
+  if (student) { playTapFeedback(true); await scanQR(student['Student ID']); setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — next person, please'); }, 1200); return; }
   const faculty  = APP.faculty.find(f => String(f['Faculty ID']) === String(personId));
-  if (faculty)  { await scanFacultyQR(faculty['Faculty ID']); setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — scan next'); }, 3000); return; }
+  if (faculty)  { playTapFeedback(true); await scanFacultyQR(faculty['Faculty ID']); setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — next person, please'); }, 1200); return; }
 
+  playTapFeedback(false);
   setScanStatus('error', 'QR not recognised — ID: ' + personId);
   showToast('QR not recognised: ' + personId);
-  setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Scanning…'); }, 3000);
+  setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — hold QR close to the camera'); }, 1500);
 }
 
 async function scanQR(id) {

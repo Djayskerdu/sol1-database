@@ -824,14 +824,14 @@
 <div class="screen" id="s-r-qr">
   <div class="topbar" style="background:var(--purple)">
     <button class="topbar-back" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <span class="topbar-title">QR Scanner</span>
+    <span class="topbar-title">Check-In</span>
     <span id="qr-live-clock" style="font-size:12px;color:rgba(255,255,255,0.8)"></span>
   </div>
   <div class="body">
     <!-- Tab bar -->
     <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin-bottom:14px;border:1.5px solid var(--purple)">
-      <button id="qr-tab-scan" onclick="switchQRTab('scan')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">📷 Scan QR</button>
-      <button id="qr-tab-tap" onclick="switchQRTab('tap')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:#fff;color:var(--purple);border:none;border-left:1.5px solid var(--purple);border-right:1.5px solid var(--purple);cursor:pointer">📳 Tap NFC</button>
+      <button id="qr-tab-scan" onclick="switchQRTab('scan')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">👆 Tap to Check In</button>
+      <button id="qr-tab-tap" onclick="switchQRTab('tap')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:#fff;color:var(--purple);border:none;border-left:1.5px solid var(--purple);border-right:1.5px solid var(--purple);cursor:pointer">📳 NFC (needs tags)</button>
       <button id="qr-tab-gen" onclick="switchQRTab('gen')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:#fff;color:var(--purple);border:none;cursor:pointer">🔲 QR Generator</button>
     </div>
 
@@ -842,7 +842,7 @@
     <!-- SCAN TAB -->
     <div id="qr-panel-scan">
       <div class="qr-scan-box" style="background:linear-gradient(135deg,var(--purple),var(--purple-light));padding:16px;border-radius:14px;text-align:center;margin-bottom:12px">
-        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:10px;font-weight:500">Point camera at student or faculty QR code</div>
+        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:10px;font-weight:500">Hold your QR code close to the camera — no need to aim, just get close</div>
         <div id="qr-reader" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000"></div>
         <div id="qr-reader-placeholder" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;min-height:200px">
           <div style="text-align:center">
