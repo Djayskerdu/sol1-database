@@ -26,7 +26,7 @@
  * all the way through SOL 1 → SOL 2 → SOL 3.
  ************************************************/
 
-const SPREADSHEET_ID = "1j5xhkCDSgAVNMVFS3Mp5Xah499mfco2o3LB_Eakig4o"; // ← REPLACE THIS
+const SPREADSHEET_ID = "PASTE_YOUR_SOL1_SPREADSHEET_ID_HERE"; // ← REPLACE THIS
 
 /************************************************
  * NEW SHEETS REQUIRED IN YOUR GOOGLE SPREADSHEET:
@@ -103,6 +103,14 @@ function doGet(e) {
       // NEW: Promotion history (which students carried their ID in from Lifeclass)
       case "promotionLog":
         return output(getSheetData("PROMOTION_LOG"));
+
+      // NEW: Batched load — returns every sheet the dashboard needs in ONE
+      // spreadsheet open + one HTTP round-trip, instead of 13 separate ones.
+      // This is the fix for slow initial sync: SpreadsheetApp.openById() is
+      // the slow part of every call, and firing it 13x in parallel also
+      // trips Apps Script's concurrent-execution throttling.
+      case "allData":
+        return output(getAllData());
 
       // ── GAME SHOW STATE (cross-device sync) ──
       case "gameState":
@@ -259,6 +267,54 @@ function getSheetData(sheetName) {
     success: true,
     data: data
   };
+}
+
+/************************************************
+ * BATCHED LOAD — one spreadsheet open, every sheet the dashboard needs
+ ************************************************/
+
+function getAllData() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const sheets = {
+    students:          "STUDENTS",
+    faculty:            "FACULTY_STAFF",
+    lessonWeeks:        "LESSON_WEEKS",
+    studentAttendance:  "STUDENT_ATTENDANCE",
+    facultyAttendance:  "FACULTY_ATTENDANCE",
+    payments:           "PAYMENTS",
+    credits:            "LC_CREDITS",
+    qrscans:            "QR_SCANS",
+    tableGuides:        "TABLE_GUIDES",
+    settings:           "SYSTEM_SETTINGS",
+    devotionals:        "STUDENT_DEVOTIONALS",
+    activities:         "STUDENT_ACTIVITIES",
+    makeupStatus:       "MAKEUP_STATUS"
+  };
+
+  const data = {};
+  for (const key in sheets) {
+    data[key] = readSheetFromSS(ss, sheets[key]);
+  }
+
+  return { success: true, data: data };
+}
+
+// Same row->object mapping as getSheetData(), but takes an already-open
+// Spreadsheet so it doesn't pay the openById() cost per sheet.
+function readSheetFromSS(ss, sheetName) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return []; // missing tab just comes back empty, not a hard error
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 1) return [];
+
+  const headers = values.shift();
+  return values.map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
 }
 
 /************************************************

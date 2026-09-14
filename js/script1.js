@@ -1,7 +1,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║  STEP 1 — PASTE YOUR GAS WEB APP URL BELOW               ║
 // ╚═══════════════════════════════════════════════════════════╝
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8ntUefBlwLprdnwN4MX5JylLLFyhdym9SkLTn1fEiQRM5a5U-_NderLGQkwvjD6YzJg/exec';
+const GAS_URL = 'PASTE_YOUR_SOL1_WEB_APP_URL_HERE';
 
 // ─── QR SECURITY TOKEN ───────────────────────────────────────
 // Deliberately a different secret/prefix from the Lifeclass app so a
@@ -257,50 +257,58 @@ function safeData(settled) {
 
 async function loadAllData() {
   updateSyncStatus(false);
-  const results = await Promise.allSettled([
-    apiGet('students'),
-    apiGet('faculty'),
-    apiGet('credits'),
-    apiGet('payments'),
-    apiGet('studentAttendance'),
-    apiGet('facultyAttendance'),
-    apiGet('lessonWeeks'),
-    apiGet('qrscans'),
-    apiGet('tableGuides'),
-    apiGet('settings'),
-    apiGet('devotionals'),
-    apiGet('activities'),
-    apiGet('makeupStatus')
-  ]);
 
-  APP.students          = safeData(results[0]);
-  APP.faculty           = safeData(results[1]);
-  APP.credits           = safeData(results[2]);
-  APP.payments          = safeData(results[3]);
-  APP.attendance        = safeData(results[4]);
-  APP.facultyAttendance = safeData(results[5]);
-  APP.lessons           = safeData(results[6]);
-  APP.qrScans           = safeData(results[7]);
-  APP.tableGuides       = safeData(results[8]);
+  // Single batched call — the backend opens the spreadsheet ONCE and reads
+  // every sheet in that one execution, instead of the old approach of 13
+  // separate HTTP calls each re-opening the spreadsheet from scratch.
+  // Falls back to the old per-sheet calls automatically if the deployed
+  // backend doesn't have the "allData" action yet (e.g. not redeployed).
+  let bundle;
+  let usedFallback = false;
+  try {
+    const res = await apiGet('allData');
+    if (!res || res.success === false || !res.data) throw new Error('allData not available');
+    bundle = res.data;
+  } catch (err) {
+    usedFallback = true;
+    const results = await Promise.allSettled([
+      apiGet('students'), apiGet('faculty'), apiGet('credits'), apiGet('payments'),
+      apiGet('studentAttendance'), apiGet('facultyAttendance'), apiGet('lessonWeeks'),
+      apiGet('qrscans'), apiGet('tableGuides'), apiGet('settings'),
+      apiGet('devotionals'), apiGet('activities'), apiGet('makeupStatus')
+    ]);
+    bundle = {
+      students: safeData(results[0]), faculty: safeData(results[1]), credits: safeData(results[2]),
+      payments: safeData(results[3]), studentAttendance: safeData(results[4]), facultyAttendance: safeData(results[5]),
+      lessonWeeks: safeData(results[6]), qrscans: safeData(results[7]), tableGuides: safeData(results[8]),
+      settings: safeData(results[9]), devotionals: safeData(results[10]), activities: safeData(results[11]),
+      makeupStatus: safeData(results[12])
+    };
+    bundle._failCount = results.slice(0, 10).filter(r => r.status === 'rejected').length;
+  }
 
-  const settingsData = safeData(results[9]);
+  APP.students          = bundle.students          || [];
+  APP.faculty            = bundle.faculty            || [];
+  APP.credits             = bundle.credits             || [];
+  APP.payments            = bundle.payments            || [];
+  APP.attendance          = bundle.studentAttendance   || [];
+  APP.facultyAttendance   = bundle.facultyAttendance   || [];
+  APP.lessons             = bundle.lessonWeeks         || [];
+  APP.qrScans             = bundle.qrscans             || [];
+  APP.tableGuides         = bundle.tableGuides         || [];
+
+  const settingsData = bundle.settings || [];
   if (settingsData.length) {
     settingsData.forEach(row => { APP.settings[row['Setting']] = row['Value']; });
     APP.currentWeek = Number(APP.settings['Current Week'] || 1);
     APP.totalFee    = Number(APP.settings['Total Class Fee'] || 500);
   }
 
-  const devotionalRows = safeData(results[10]);
-  const activityRows   = safeData(results[11]);
-  const makeupRows     = safeData(results[12]);
-
-  loadDevotionalsFromSheet(devotionalRows);
-  loadActivitiesFromSheet(activityRows);
+  loadDevotionalsFromSheet(bundle.devotionals || []);
+  loadActivitiesFromSheet(bundle.activities || []);
   loadDevotionalsLocal();   // fill blanks from localStorage (offline fallback)
   loadActivitiesLocal();
-  loadMakeupStatusFromSheet(makeupRows);
-
-  const failCount = results.slice(0, 10).filter(r => r.status === 'rejected').length;
+  loadMakeupStatusFromSheet(bundle.makeupStatus || []);
 
   populateCreditStudentSelect();
   populatePayStudentSelect();
@@ -311,11 +319,16 @@ async function loadAllData() {
   renderBalancesSummary();
   refreshCurrentScreen();
 
-  if (failCount === 10) {
-    updateSyncStatus(false, 'Cannot reach server — check GAS_URL');
-    showConnectionError();
-  } else if (failCount > 0) {
-    updateSyncStatus(false, failCount + ' source(s) failed to load');
+  if (usedFallback) {
+    const failCount = bundle._failCount || 0;
+    if (failCount === 10) {
+      updateSyncStatus(false, 'Cannot reach server — check GAS_URL');
+      showConnectionError();
+    } else if (failCount > 0) {
+      updateSyncStatus(false, failCount + ' source(s) failed to load');
+    } else {
+      updateSyncStatus(true);
+    }
   } else {
     updateSyncStatus(true);
   }
