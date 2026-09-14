@@ -1,7 +1,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║  STEP 1 — PASTE YOUR GAS WEB APP URL BELOW               ║
 // ╚═══════════════════════════════════════════════════════════╝
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxdRDQDjRjyY9YlQ8MZuKDcCZVrjIUSa6VP272FoY0GEkMDGR2MG_0RuaPESUMIm_wWvw/exec';
+const GAS_URL = 'PASTE_YOUR_SOL1_WEB_APP_URL_HERE';
 
 // ─── QR SECURITY TOKEN ───────────────────────────────────────
 // Deliberately a different secret/prefix from the Lifeclass app so a
@@ -265,10 +265,12 @@ async function loadAllData() {
   // backend doesn't have the "allData" action yet (e.g. not redeployed).
   let bundle;
   let usedFallback = false;
+  let missingSheets = [];
   try {
     const res = await apiGet('allData');
     if (!res || res.success === false || !res.data) throw new Error('allData not available');
     bundle = res.data;
+    missingSheets = res.missingSheets || [];
   } catch (err) {
     usedFallback = true;
     const results = await Promise.allSettled([
@@ -329,6 +331,15 @@ async function loadAllData() {
     } else {
       updateSyncStatus(true);
     }
+  } else if (missingSheets.length) {
+    // The request succeeded, but one or more tabs don't exist in the Sheet
+    // (wrong/renamed tab, e.g. FACULTY_STAFF) — this is why login can say
+    // "still connecting" even though the badge would otherwise say Synced.
+    updateSyncStatus(false, 'Missing tab(s) in Sheet: ' + missingSheets.join(', '));
+  } else if (APP.faculty.length === 0) {
+    // Connected fine, FACULTY_STAFF tab exists, but it has no rows —
+    // logins need at least one row in there (Username/Password columns).
+    updateSyncStatus(false, 'Connected, but FACULTY_STAFF has no rows yet');
   } else {
     updateSyncStatus(true);
   }
@@ -991,7 +1002,7 @@ function renderFCredits() {
   el.innerHTML = sorted.map((s, i) => `
     <div class="row">
       <div><strong>#${i + 1} ${s["Full Name"]}</strong><br><small>${getTableLabel(s["Table No"])}</small></div>
-      <div>${getStudentCredits(s["Student ID"])} LC</div>
+      <div>${getStudentCredits(s["Student ID"])} SOL</div>
     </div>
   `).join('') || '<p style="padding:16px;color:var(--gray)">No credits yet.</p>';
 }
@@ -1029,7 +1040,7 @@ async function doAddCredit() {
       addedBy: APP.currentFaculty?.["Full Name"] || "Faculty"
     });
 
-    showToast(`✅ ${amount} LC added to ${student["Full Name"]}`);
+    showToast(`✅ ${amount} SOL added to ${student["Full Name"]}`);
     if (amountEl) amountEl.value = 5;
     await loadAllData();
   } catch (err) {
@@ -1171,7 +1182,7 @@ function showTableDetail(tableNo) {
   if (list) list.innerHTML = sorted.map(s => `
     <div class="row">
       <div><strong>${s["Full Name"]}</strong></div>
-      <div>${getStudentCredits(s["Student ID"])} LC</div>
+      <div>${getStudentCredits(s["Student ID"])} SOL</div>
     </div>
   `).join('') || '<p style="padding:16px;color:var(--gray)">No students in this table.</p>';
 }
@@ -1200,14 +1211,14 @@ async function confirmDropStudentFromTable(studentId, studentName) {
   }
 }
 
-// Get total LC credits for a whole table — table-level only (studentId is blank)
+// Get total SOL credits for a whole table — table-level only (studentId is blank)
 function getTableCredits(tableNo) {
   return APP.credits
     .filter(c => String(c["Table No"]) === String(tableNo) && (!c["Student ID"] || String(c["Student ID"]).startsWith('TABLE-')))
     .reduce((sum, c) => sum + Number(c["Credits Added"] || 0), 0);
 }
 
-// Get total LC credits for a table summing all student credits in that table
+// Get total SOL credits for a table summing all student credits in that table
 function getTableTotalStudentCredits(tableNo) {
   const students = APP.students.filter(s => String(s["Table No"]) === String(tableNo));
   return students.reduce((sum, s) => sum + getStudentCredits(s["Student ID"]), 0);
@@ -1242,7 +1253,7 @@ function renderLeaderboard() {
   el.innerHTML = sorted.map((s, i) => `
     <div class="row">
       <div><strong>${medals[i] || `#${i + 1}`} ${s["Full Name"]}</strong><br><small>${getTableLabel(s["Table No"])}</small></div>
-      <div>${getStudentCredits(s["Student ID"])} LC</div>
+      <div>${getStudentCredits(s["Student ID"])} SOL</div>
     </div>
   `).join('') || '<p style="padding:16px;color:var(--gray)">No students yet.</p>';
 }
@@ -1263,7 +1274,7 @@ function renderTableLeaderboard() {
   el.innerHTML = sorted.map((t, i) => `
     <div class="row">
       <div><strong>${medals[i] || `#${i + 1}`} ${getTableLabel(t)}</strong><br><small>${tableMap[t].count} students</small></div>
-      <div>${tableMap[t].total} LC</div>
+      <div>${tableMap[t].total} SOL</div>
     </div>
   `).join('') || '<p style="padding:16px;color:var(--gray)">No data yet.</p>';
 }
@@ -1976,7 +1987,7 @@ async function doTableAddCredit() {
 
     closeTableCreditModal();
     await loadAllData();
-    showToast(`✅ ${amount} LC added to ${getTableLabel(tableNo)}`);
+    showToast(`✅ ${amount} SOL added to ${getTableLabel(tableNo)}`);
     showTableDetail(tableNo);
   } catch (err) {
     showToast('❌ ' + (err.message || 'Failed to save'));

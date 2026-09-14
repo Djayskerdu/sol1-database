@@ -293,11 +293,14 @@ function getAllData() {
   };
 
   const data = {};
+  const missingSheets = []; // tab doesn't exist at all — a real config problem
   for (const key in sheets) {
+    const sheet = ss.getSheetByName(sheets[key]);
+    if (!sheet) { missingSheets.push(sheets[key]); data[key] = []; continue; }
     data[key] = readSheetFromSS(ss, sheets[key]);
   }
 
-  return { success: true, data: data };
+  return { success: true, data: data, missingSheets: missingSheets };
 }
 
 // Same row->object mapping as getSheetData(), but takes an already-open
