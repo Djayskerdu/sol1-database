@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<!-- v8 2026-06-08 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SOL 1">
+<meta name="description" content="School of Leaders 1 Church Equipping App">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>SOL 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+</head>
+<body>
+
+<div id="toast"></div>
+<button id="global-refresh-btn" class="is-hidden" onclick="refreshApp()" title="Refresh data" aria-label="Refresh data">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="23 4 23 10 17 10"></polyline>
+    <polyline points="1 20 1 14 7 14"></polyline>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+  </svg>
+</button>
+<div id="app">
+
+<!-- DESKTOP SIDEBAR (hidden on mobile via CSS) -->
+<div id="desktop-sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-dot">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    </div>
+    <div class="sidebar-logo-name">SOL 1</div>
+    <div class="sidebar-logo-sub">Church Equipping Class</div>
+  </div>
+
+  <!-- Portal nav (shown when not logged in) -->
+  <div id="sidebar-portal-nav" class="sidebar-nav">
+    <div class="sidebar-section-label">Portals</div>
+    <button class="sidebar-btn" onclick="go('s-faculty-login')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Faculty & Staff
+    </button>
+    <button class="sidebar-btn" onclick="go('s-admin-login')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Admin
+    </button>
+    <button class="sidebar-btn" onclick="go('s-record-login')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Record Keeper
+    </button>
+  </div>
+
+  <!-- Faculty nav -->
+  <div id="sidebar-faculty-nav" class="sidebar-nav" style="display:none">
+    <div class="sidebar-section-label">Faculty</div>
+    <button class="sidebar-btn" onclick="go('s-faculty-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="sidebar-btn" id="sidebar-back-to-admin-btn" onclick="go('s-admin-home')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6" transform="rotate(180 12 12)"/></svg>
+      Back to Admin
+    </button>
+    <button class="sidebar-btn" onclick="go('s-f-lessons')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Lessons
+    </button>
+    <button class="sidebar-btn" onclick="go('s-f-students')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Attendance
+    </button>
+    <button class="sidebar-btn" onclick="go('s-f-payment')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Payment
+    </button>
+    <button class="sidebar-btn" onclick="go('s-f-credits')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Credits
+    </button>
+    <button class="sidebar-btn" onclick="go('s-add-credit')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add Credits
+    </button>
+    <button class="sidebar-btn" onclick="go('s-f-devotional')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Devotional
+    </button>
+  </div>
+
+  <!-- Admin nav -->
+  <div id="sidebar-admin-nav" class="sidebar-nav" style="display:none">
+    <div class="sidebar-section-label">Admin</div>
+    <button class="sidebar-btn" onclick="go('s-admin-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="sidebar-btn" id="sidebar-my-table-btn" onclick="go('s-faculty-home')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      My Table
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-student-att')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Attendance
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-tables')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Tables
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-leaderboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+      Leaderboard
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-makeup')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Make-up
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-dropped')" id="sb-dropped-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
+      Dropped
+      <span id="sb-dropped-badge" class="sb-badge" style="display:none"></span>
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-devotional')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Devotional
+    </button>
+  </div>
+
+  <!-- Record nav -->
+  <div id="sidebar-record-nav" class="sidebar-nav" style="display:none">
+    <div class="sidebar-section-label">Record</div>
+    <button class="sidebar-btn" onclick="go('s-record-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="sidebar-btn" onclick="go('s-r-qr')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      QR Scan
+    </button>
+    <button class="sidebar-btn" onclick="switchAttTab('students');go('s-r-attendance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Attendance
+    </button>
+    <button class="sidebar-btn" onclick="go('s-r-payment')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Payment
+    </button>
+    <button class="sidebar-btn" onclick="go('s-r-balances')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Balances
+    </button>
+  </div>
+
+  <div class="sidebar-bottom" id="sidebar-bottom" style="display:none">
+    <div class="sidebar-user">
+      <div class="sidebar-user-av" id="sidebar-user-av">–</div>
+      <div>
+        <div class="sidebar-user-name" id="sidebar-user-name">–</div>
+        <div class="sidebar-user-role" id="sidebar-user-role">–</div>
+      </div>
+    </div>
+    <button class="sidebar-logout-btn" onclick="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Logout
+    </button>
+  </div>
+</div>
+<!-- /DESKTOP SIDEBAR -->
+
+<!-- DESKTOP MAIN CONTENT WRAPPER -->
+<div id="desktop-main">
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <div class="ib-inner">
+    <p><strong>Install SOL 1</strong> — add to home screen for quick access</p>
+    <button id="btn-install">Install</button>
+    <button id="btn-dismiss">×</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PORTAL SELECT
+══════════════════════════════════════════ -->
+<div class="screen active" id="s-portal">
+  <div class="portal-hero">
+    <div class="portal-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6l-8-4z"/></svg>
+    </div>
+    <div class="portal-name">SOL 1</div>
+    <div class="portal-sub">Church Equipping Class</div>
+  </div>
+  <div class="portal-cards">
+    <button class="portal-btn pb-f" onclick="go('s-faculty-login')">
+      <div class="pb-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="pb-text"><div class="pb-title">Faculty &amp; Staff</div><div class="pb-sub">Lessons · Table · SOL Credits</div></div>
+      <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="portal-btn pb-a" onclick="go('s-admin-login')">
+      <div class="pb-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="pb-text"><div class="pb-title">Admin — Director &amp; Consultant</div><div class="pb-sub">Dashboard · Attendance · Records</div></div>
+      <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="portal-btn pb-r" onclick="go('s-record-login')">
+      <div class="pb-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+      <div class="pb-text"><div class="pb-title">Record — QR Scan</div><div class="pb-sub">Scan Attendance · Payment</div></div>
+      <svg class="arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div style="padding:0 20px 20px;text-align:center">
+    <div style="font-size:11px;color:var(--text3)"><span class="sync-dot" id="sync-dot-portal"></span><span id="sync-label-portal">Loading...</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY LOGIN
+══════════════════════════════════════════ -->
+<div class="screen" id="s-faculty-login">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-portal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Faculty &amp; Staff</span>
+  </div>
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-head">
+        <div class="login-avatar" style="background:var(--navy)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="login-title">Faculty &amp; Staff Login</div>
+        <div class="login-sub">Enter your credentials to continue</div>
+      </div>
+      <div class="field"><label>Username</label><input type="text" id="f-login-user" placeholder="e.g. teacher.maria" style="--accent:var(--navy)" onkeydown="if(event.key==='Enter')doFacultyLogin()"></div>
+      <div class="field"><label>Password</label><input type="password" id="f-login-pass" placeholder="••••••••" style="--accent:var(--navy)" onkeydown="if(event.key==='Enter')doFacultyLogin()"></div>
+      <div id="f-login-err" style="display:none;color:#c0392b;font-size:12px;margin-bottom:8px;text-align:center"></div>
+      <button class="btn-primary" style="background:var(--navy)" onclick="doFacultyLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY HOME
+══════════════════════════════════════════ -->
+<div class="screen" id="s-faculty-home">
+  <div class="topbar" style="background:var(--navy)">
+    <svg style="width:20px;height:32.5px;stroke:#fff;stroke-width:1;fill:none;flex-shrink:0" viewBox="0 0 20 20"></svg>
+    <span class="topbar-title">TABLE GUIDE</span>
+  </div>
+  <div class="body">
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--navy),var(--navy-light))">
+      <div style="color:rgba(255,255,255,0.65);font-size:11px;font-weight:500">Welcome back,</div>
+      <div style="color:#fff;font-family:var(--font-head);font-size:20px;font-weight:700;margin-top:2px" id="f-home-name">—</div>
+      <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px" id="f-home-role">—</div>
+    </div>
+    <div id="f-back-to-admin-wrap" style="display:none">
+      <div class="slabel">Director / Consultant</div>
+      <button class="menu-item" onclick="go('s-admin-home')">
+        <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="mi-text"><div class="mi-title">Back to Admin View</div><div class="mi-sub">All tables, leaderboard &amp; reports</div></div>
+        <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="slabel">Lessons</div>
+    <button class="menu-item" onclick="go('s-f-lessons')">
+      <div class="mi-icon" style="background:#e8f0fb"><svg viewBox="0 0 24 24" stroke="#1a3a5c"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+      <div class="mi-text"><div class="mi-title">SOL 1 Lesson Weeks</div><div class="mi-sub">View weekly lesson content</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="slabel">My Table</div>
+    <button class="menu-item" onclick="go('s-f-students')">
+      <div class="mi-icon" style="background:#f0ebff"><svg viewBox="0 0 24 24" stroke="#7c3aed" fill="none"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Attendance</div><div class="mi-sub">Present / Late / Absent by week</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-f-payment')">
+      <div class="mi-icon" style="background:#e8fbf0"><svg viewBox="0 0 24 24" stroke="#2d6a4f" fill="none"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Payment</div><div class="mi-sub">Track ₱500 class fee status</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-f-credits')">
+      <div class="mi-icon" style="background:#fef9e0"><svg viewBox="0 0 24 24" stroke="#c9960c" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="mi-text"><div class="mi-title">SOL Credits</div><div class="mi-sub">Add &amp; view student credits</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-f-devotional')">
+      <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Devotional &amp; Activities</div><div class="mi-sub">Daily check — 63 days total</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni active" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni" onclick="go('s-f-students')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-f-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Devot.</button>
+    <button class="ni" id="f-bnav-admin" onclick="go('s-admin-home')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Admin</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY LESSONS
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-lessons">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Lesson Weeks</span>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Tap a week to view lesson details</div>
+      <div class="week-grid" id="week-grid-f"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">Weeks are added by admin as the batch progresses</div>
+    </div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni" onclick="go('s-f-students')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Table</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY LESSON DETAIL
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-lesson-detail">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="lesson-detail-title">Lesson Detail</span>
+  </div>
+  <div class="body" id="lesson-detail-body"></div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni" onclick="go('s-f-students')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Table</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY STUDENTS
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-students">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="f-students-topbar">Attendance</span>
+  </div>
+  <div class="body">
+    <div class="filter-bar">
+      <select id="f-week-filter" onchange="renderFStudents()"></select>
+    </div>
+    <div class="card" style="padding:0 16px" id="f-students-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Table</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY PAYMENT
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-payment">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="f-payment-topbar">Payment</span>
+  </div>
+  <div class="body">
+    <div class="card" style="padding:0 16px" id="f-payment-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Table</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY LC CREDITS
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-credits">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="f-credits-topbar">SOL Credits</span>
+  </div>
+  <div class="body">
+    <button class="btn-primary" style="background:var(--navy);border-radius:var(--radius);margin-bottom:14px" onclick="go('s-add-credit')">+ Add Credits to a Student</button>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:right">Sorted by highest credits</div>
+    <div class="card" style="padding:0 16px" id="f-credits-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Credits</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ADD CREDIT SCREEN -->
+<div class="screen" id="s-add-credit">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-f-credits')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Add Credits</span>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="field"><label>Select Student</label><select id="credit-student-sel" class="fi"></select></div>
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Reason for Credit</div>
+<div class="reason-grid">
+  <button class="reason-btn selected" onclick="selectReason(this,'Attendance')">📋 Attendance</button>
+  <button class="reason-btn" onclick="selectReason(this,'Participation')">🙋 Participation</button>
+  <button class="reason-btn" onclick="selectReason(this,'Homework')">📝 Homework</button>
+  <button class="reason-btn" onclick="selectReason(this,'Memory Verse')">✝️ Memory Verse</button>
+  <button class="reason-btn" onclick="selectReason(this,'__other__')" style="grid-column:1/-1">✏️ Other (optional — type below)</button>
+</div>
+      <div id="credit-other-wrap" style="display:none;margin-bottom:12px">
+        <input type="text" id="credit-other-text" placeholder="Describe reason..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font)">
+      </div>
+      <div class="field"><label>Credits to Add</label><input type="number" id="credit-amount" value="5" min="1" max="50"></div>
+      <button class="btn-primary" style="background:var(--navy)" onclick="doAddCredit()">Add Credits</button>
+    </div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-lessons')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Lessons</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Credits</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN LOGIN
+══════════════════════════════════════════ -->
+<div class="screen" id="s-admin-login">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-portal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Admin Portal</span>
+  </div>
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-head">
+        <div class="login-avatar" style="background:var(--green)"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="login-title">Admin Login</div>
+        <div class="login-sub">Director &amp; Consultant access</div>
+      </div>
+      <div class="field"><label>Username</label><input type="text" id="a-login-user" placeholder="admin username" style="--accent:var(--green)" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+      <div class="field"><label>Password</label><input type="password" id="a-login-pass" placeholder="••••••••" style="--accent:var(--green)" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+      <div id="a-login-err" style="display:none;color:#c0392b;font-size:12px;margin-bottom:8px;text-align:center"></div>
+      <button class="btn-primary" style="background:var(--green)" onclick="doAdminLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN HOME
+══════════════════════════════════════════ -->
+<div class="screen" id="s-admin-home">
+  <div class="topbar" style="background:var(--green)">
+    <svg style="width:20px;height:32.5px;stroke:#fff;stroke-width:1;fill:none;flex-shrink:0" viewBox="0 0 20 20"></svg>
+    <span class="topbar-title">DIRECTOR & CONSULTANT</span>
+  </div>
+  <div class="body">
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--green),var(--green-light))">
+      <div style="color:rgba(255,255,255,0.65);font-size:11px;font-weight:500;margin-bottom:8px">BATCH OVERVIEW</div>
+      <div class="stat-grid" style="margin-bottom:0;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:var(--font-head);font-size:32px;font-weight:700;color:#fff;line-height:1" id="a-total-paid">₱—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:6px">Total Payments</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:var(--font-head);font-size:32px;font-weight:700;color:#fff;line-height:1" id="a-total-students">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:6px">Total Students</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:var(--font-head);font-size:32px;font-weight:700;color:#fff;line-height:1" id="a-total-faculty">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:6px">Faculty &amp; Staff</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:var(--font-head);font-size:32px;font-weight:700;color:rgba(255,180,180,1);line-height:1" id="a-total-dropped">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:6px">Total Dropped</div>
+        </div>
+      </div>
+    </div>
+    <div id="a-my-table-wrap" style="display:none">
+      <div class="slabel">My Table</div>
+      <button class="menu-item" onclick="go('s-faculty-home')">
+        <div class="mi-icon" style="background:#e8f0fb"><svg viewBox="0 0 24 24" stroke="#1a3a5c" fill="none"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="mi-text"><div class="mi-title" id="a-my-table-title">Table Guide View</div><div class="mi-sub">Manage attendance, payments &amp; credits for your own table</div></div>
+        <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="slabel">Manage</div>
+    <button class="menu-item" onclick="go('s-a-student-att')">
+      <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Student Attendance</div><div class="mi-sub">By lesson week, sorted by time</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-faculty-att')">
+      <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Faculty &amp; Staff Attendance</div><div class="mi-sub">Track with scan time</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-makeup')">
+      <div class="mi-icon" style="background:#fff5e0"><svg viewBox="0 0 24 24" stroke="#c9960c"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Make-up Lessons</div><div class="mi-sub">Filter by week</div></div>
+      <span class="badge ba mi-badge" id="a-makeup-badge" style="display:none"></span>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-dropped')">
+      <div class="mi-icon" style="background:#fdecea"><svg viewBox="0 0 24 24" stroke="#e53935"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Dropped Students</div><div class="mi-sub">Inactive &amp; dropped records</div></div>
+      <span class="badge" id="a-dropped-badge" style="display:none;background:#e53935;color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700"></span>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-tables')">
+      <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Table Guides &amp; Records</div><div class="mi-sub">Tables 1–6 full records</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-leaderboard')">
+      <div class="mi-icon" style="background:#fff5e0"><svg viewBox="0 0 24 24" stroke="#c9960c" fill="none"><polyline points="18 15 12 9 6 15"/></svg></div>
+      <div class="mi-text"><div class="mi-title">SOL Credits Leaderboard</div><div class="mi-sub">Highest credits across all tables</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-a-devotional')">
+      <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Devotional &amp; Activities Record</div><div class="mi-sub">View all tables daily completion</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni active" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-student-att')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN STUDENT ATTENDANCE
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-student-att">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Student Attendance</span>
+    <button onclick="printAttendance()" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer">🖨 Print</button>
+  </div>
+  <div class="body">
+    <div class="filter-bar"><select id="a-att-week" onchange="renderAStudentAtt()"></select></div>
+    <div class="card" style="padding:0 16px" id="a-att-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     ADMIN FACULTY ATTENDANCE
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-faculty-att">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Faculty &amp; Staff Attendance</span>
+  </div>
+  <div class="body">
+    <div class="filter-bar"><select id="a-fac-att-week" onchange="renderAFacultyAtt()"></select></div>
+    <div class="card" style="padding:0 16px" id="a-fac-att-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN MAKEUP
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-makeup">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Make-up Lessons</span>
+  </div>
+  <div class="body">
+    <div class="filter-bar"><select id="makeup-week" onchange="renderMakeup()"></select></div>
+    <div class="card" style="padding:0 16px" id="makeup-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+
+
+<!-- ══════════════════════════════════════════
+     ADMIN DROPPED STUDENTS
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-dropped">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Dropped Students</span>
+  </div>
+  <div class="body">
+    <button class="btn-primary" style="background:#e53935;border-radius:var(--radius);margin-bottom:14px" onclick="openDropStudentModal()">+ Drop a Student</button>
+    <div class="slabel">Dropped — By Table</div>
+    <div class="card" style="padding:0 16px" id="a-dropped-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-student-att')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- DROP STUDENT MODAL -->
+<div id="modal-drop-student" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:480px;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 -4px 30px rgba(0,0,0,0.2)">
+    <!-- Step 1: Pick Table -->
+    <div id="drop-step-table">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:15px;font-weight:700;color:var(--text1)">Drop a Student</div>
+        <button onclick="closeDropStudentModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3)">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Select a table first</div>
+      <div id="drop-table-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+    </div>
+    <!-- Step 2: Pick Student -->
+    <div id="drop-step-students" style="display:none;flex:1;min-height:0;display:none;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <button onclick="document.getElementById('drop-step-table').style.display='';document.getElementById('drop-step-students').style.display='none'" style="background:none;border:none;cursor:pointer;padding:4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text1)" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="drop-step-table-label" style="font-size:15px;font-weight:700;color:var(--text1)"></div>
+        <button onclick="closeDropStudentModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);margin-left:auto">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Tap a name to drop them</div>
+      <div id="drop-student-list" style="overflow-y:auto;border-radius:12px;border:1px solid var(--border)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN TABLES
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-tables">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Table Guides &amp; Records</span>
+  </div>
+  <div class="body">
+    <div class="filter-bar"><select id="a-table-week" onchange="renderATables()"></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="a-table-grid"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-student-att')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ADMIN TABLE DETAIL -->
+<div class="screen" id="s-a-table-detail">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="a-td-title">Table Record</span>
+  </div>
+  <div class="body">
+    <!-- Present Wk banner lives OUTSIDE the table detail card -->
+    <div id="a-td-present-stat"></div>
+    <div class="stat-grid" id="a-td-stats"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="slabel" style="margin-bottom:0">Students — sorted by highest credits</div>
+      <button onclick="openTableAddCredit()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add SOL Credits
+      </button>
+    </div>
+    <div class="card" style="padding:0 16px" id="a-td-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-student-att')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<div id="modal-table-credit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:480px;box-shadow:0 -4px 30px rgba(0,0,0,0.2)">
+    <div id="modal-table-credit-title" style="font-size:15px;font-weight:700;color:var(--text1);margin-bottom:4px">Add SOL Credits to Table</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Credits are awarded to the whole table group</div>
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Reason</div>
+<div class="reason-grid">
+  <button class="reason-btn selected" onclick="selectReason(this,'Attendance')">📋 Attendance</button>
+  <button class="reason-btn" onclick="selectReason(this,'Participation')">🙋 Participation</button>
+  <button class="reason-btn" onclick="selectReason(this,'Homework')">📝 Homework</button>
+  <button class="reason-btn" onclick="selectReason(this,'Memory Verse')">✝️ Memory Verse</button>
+  <button class="reason-btn" onclick="selectReason(this,'__other__')" style="grid-column:1/-1">✏️ Other (optional — type below)</button>
+</div>
+<div id="modal-other-wrap" style="display:none;margin-bottom:12px">
+  <input type="text" id="modal-other-text" placeholder="Describe reason..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font)">
+</div>
+    <div class="field"><label>Credits to Add</label><input type="number" id="modal-credit-amount" value="5" min="1" max="500"></div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button onclick="closeTableCreditModal()" style="flex:1;padding:11px;border:1.5px solid #ddd;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:var(--text2)">Cancel</button>
+      <button id="modal-add-credit-btn" onclick="doTableAddCredit()" style="flex:2;padding:11px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Add Credits to Table</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN LEADERBOARD
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-leaderboard">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">SOL Credits Leaderboard</span>
+  </div>
+  <div class="body">
+    <div class="card-hero" style="background:linear-gradient(135deg,#c9960c,#e8b820);text-align:center">
+      <div style="font-size:32px;margin-bottom:4px">🏆</div>
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:#fff">SOL Credits Rankings</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:3px">Who's leading the pack?</div>
+    </div>
+    <!-- Tab bar -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin:12px 0;border:1.5px solid #c9960c">
+      <button id="lb-tab-students" onclick="switchLeaderboardTab('students')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#c9960c;color:#fff;border:none;cursor:pointer">🎓 Students</button>
+      <button id="lb-tab-tables" onclick="switchLeaderboardTab('tables')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#fff;color:#c9960c;border:none;cursor:pointer">📋 By Table</button>
+    </div>
+    <div class="card" style="padding:0 16px" id="a-leaderboard-list"></div>
+    <div class="card" style="padding:0 16px;display:none" id="a-table-leaderboard-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-student-att')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="18 15 12 9 6 15"/></svg>Leaders</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD LOGIN
+══════════════════════════════════════════ -->
+<div class="screen" id="s-record-login">
+  <div class="topbar" style="background:var(--purple)">
+    <button class="topbar-back" onclick="go('s-portal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Record Portal</span>
+  </div>
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-head">
+        <div class="login-avatar" style="background:var(--purple)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+        <div class="login-title">Record Login</div>
+        <div class="login-sub">QR Scan &amp; Attendance Entry</div>
+      </div>
+      <div class="field"><label>Username</label><input type="text" id="r-login-user" placeholder="recorder01" style="--accent:var(--purple)" onkeydown="if(event.key==='Enter')doRecordLogin()"></div>
+      <div class="field"><label>Password</label><input type="password" id="r-login-pass" placeholder="••••••••" style="--accent:var(--purple)" onkeydown="if(event.key==='Enter')doRecordLogin()"></div>
+      <div id="r-login-err" style="display:none;color:#c0392b;font-size:12px;margin-bottom:8px;text-align:center"></div>
+      <button class="btn-primary" style="background:var(--purple)" onclick="doRecordLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD HOME
+══════════════════════════════════════════ -->
+<div class="screen" id="s-record-home">
+  <div class="topbar" style="background:var(--purple)">
+    <svg style="width:20px;height:20px;stroke:#fff;stroke-width:1.8;fill:none;flex-shrink:0" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="topbar-title">Record Dashboard</span>
+  </div>
+  <div class="body">
+    <div class="stat-grid" id="r-stats"></div>
+    <div class="slabel">Actions</div>
+    <button class="menu-item" onclick="go('s-r-qr')">
+      <div class="mi-icon" style="background:#f0e8f8"><svg viewBox="0 0 24 24" stroke="#6b2d5e"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="mi-text"><div class="mi-title">QR Scan Attendance</div><div class="mi-sub">Auto-detects Present / Late / Absent</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-r-attendance')">
+      <div class="mi-icon" style="background:#f0ebff"><svg viewBox="0 0 24 24" stroke="#7c3aed"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Attendance List</div><div class="mi-sub">Students &amp; Faculty · by week</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <button class="menu-item" onclick="go('s-r-payment')">
+      <div class="mi-icon" style="background:#f0e8f8"><svg viewBox="0 0 24 24" stroke="#6b2d5e"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Record Payment</div><div class="mi-sub">₱500 class fee per student</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item" onclick="go('s-r-balances')">
+      <div class="mi-icon" style="background:#f0e8f8"><svg viewBox="0 0 24 24" stroke="#6b2d5e"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="mi-text"><div class="mi-title">Total Student Balances</div><div class="mi-sub">Paid / Partial / Unpaid overview</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="bnav" style="--active-color:var(--purple)">
+    <button class="ni active" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-r-qr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Scan</button>
+    <button class="ni" onclick="go('s-r-attendance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>List</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD QR SCAN
+══════════════════════════════════════════ -->
+<div class="screen" id="s-r-qr">
+  <div class="topbar" style="background:var(--purple)">
+    <button class="topbar-back" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">QR Scanner</span>
+    <span id="qr-live-clock" style="font-size:12px;color:rgba(255,255,255,0.8)"></span>
+  </div>
+  <div class="body">
+    <!-- Tab bar -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin-bottom:14px;border:1.5px solid var(--purple)">
+      <button id="qr-tab-scan" onclick="switchQRTab('scan')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">📷 Scan QR</button>
+      <button id="qr-tab-gen" onclick="switchQRTab('gen')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#fff;color:var(--purple);border:none;cursor:pointer">🔲 QR Generator</button>
+    </div>
+
+    <!-- SCAN TAB -->
+    <div id="qr-panel-scan">
+      <div class="qr-scan-box" style="background:linear-gradient(135deg,var(--purple),var(--purple-light));padding:16px;border-radius:14px;text-align:center;margin-bottom:12px">
+        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:10px;font-weight:500">Point camera at student or faculty QR code</div>
+        <div id="qr-reader" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000"></div>
+        <div id="qr-reader-placeholder" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;min-height:200px">
+          <div style="text-align:center">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:6px">Camera not started</div>
+          </div>
+        </div>
+        <button onclick="startQRCamera()" id="qr-start-btn" style="margin-top:12px;background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">▶ Start Camera</button>
+        <button onclick="stopQRCamera()" id="qr-stop-btn" style="display:none;margin-top:12px;background:rgba(255,0,0,0.3);color:#fff;border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">⏹ Stop Camera</button>
+        <div id="qr-time-rule" style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:10px"></div>
+      </div>
+      <!-- Live status bar -->
+      <div id="qr-status-bar" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;transition:background 0.3s"></div>
+      <div id="qr-result"></div>
+    </div>
+
+      <!-- Time rules reminder -->
+      <div style="background:#f8f4ff;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:#6b2d5e;line-height:1.6;border-left:3px solid var(--purple)">
+        <strong>⏱ Attendance Time Rules:</strong><br>
+        ✅ <strong>1:00 PM – 1:44 PM</strong> = Present<br>
+        ⏰ <strong>1:45 PM – 2:29 PM</strong> = Late<br>
+        ❌ <strong>2:30 PM onwards</strong> = Absent<br>
+        <span style="color:#888;font-size:10px">3 unexcused late = 1 Absent · 3 absences = Drop</span>
+      </div>
+      <!-- Mark all unscanned as absent -->
+      <button id="mark-absent-btn" onclick="markUnscannedAbsent()" style="width:100%;padding:12px;background:#fdecea;color:#e53935;border:1.5px solid #e53935;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:4px">
+        📋 Mark Unscanned as Absent (Students & Faculty)
+      </button>
+    <div id="qr-panel-gen" style="display:none">
+      <div class="card" style="padding:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:12px">Generate QR Code</div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Type</label>
+          <select id="qrgen-type" onchange="renderQRGenList()" class="fi">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty &amp; Staff</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Search</label>
+          <input type="text" id="qrgen-search" placeholder="Name or ID..." oninput="renderQRGenList()" style="width:100%;box-sizing:border-box">
+        </div>
+        <div id="qrgen-list" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto"></div>
+      </div>
+      <!-- QR Modal -->
+      <div id="qrgen-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column" onclick="closeQRModal()">
+        <div style="background:#fff;border-radius:16px;padding:24px;text-align:center;max-width:280px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.4)" onclick="event.stopPropagation()">
+          <div style="font-size:14px;font-weight:700;color:var(--text1);margin-bottom:4px" id="qrgen-modal-name"></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="qrgen-modal-id"></div>
+          <!-- QR image renders here -->
+          <div id="qrgen-img-wrap" style="min-height:240px;display:flex;align-items:center;justify-content:center">
+            <div style="color:#999;font-size:13px">Tap a person to generate their QR</div>
+          </div>
+          <!-- Hidden canvas used for download -->
+          <canvas id="qrgen-canvas" style="display:none"></canvas>
+          <div id="qrgen-payload" style="font-size:9px;color:#bbb;margin-top:6px;word-break:break-all;text-align:center"></div>
+          <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+            <button onclick="downloadQRCode()" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">⬇ Save PNG</button>
+            <button onclick="closeQRModal()" style="background:#f0f0f0;color:var(--text2);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bnav" style="--active-color:var(--purple)">
+    <button class="ni" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Scan</button>
+    <button class="ni" onclick="go('s-r-attendance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>List</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD ATTENDANCE
+══════════════════════════════════════════ -->
+<div class="screen" id="s-r-attendance">
+  <div class="topbar" style="background:var(--purple)">
+    <button class="topbar-back" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Attendance List</span>
+  </div>
+  <div class="body">
+    <!-- Tab switch -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1.5px solid var(--purple)">
+      <button id="att-tab-students" onclick="switchAttTab('students')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">🎓 Students</button>
+      <button id="att-tab-faculty" onclick="switchAttTab('faculty')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#fff;color:var(--purple);border:none;cursor:pointer">👔 Faculty &amp; Staff</button>
+    </div>
+    <!-- Student Attendance -->
+    <div id="att-panel-students">
+      <div class="filter-bar"><select id="r-att-week" onchange="renderRAttendance()"></select></div>
+      <div class="card" style="padding:0 16px" id="r-att-list"></div>
+    </div>
+    <!-- Faculty Attendance -->
+    <div id="att-panel-faculty" style="display:none">
+      <div class="filter-bar"><select id="r-fac-att-week" onchange="renderRFacultyAtt()"></select></div>
+      <div class="card" style="padding:0 16px" id="r-fac-att-list"></div>
+    </div>
+  </div>
+  <div class="bnav" style="--active-color:var(--purple)">
+    <button class="ni" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-r-qr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Scan</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>List</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD PAYMENT
+══════════════════════════════════════════ -->
+<div class="screen" id="s-r-payment">
+  <div class="topbar" style="background:var(--purple)">
+    <button class="topbar-back" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Record Payment</span>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="field"><label>Search Student</label><input type="text" id="pay-search" placeholder="Name or Student ID..." oninput="filterPayStudents()"></div>
+      <div class="field"><label>Select Student</label><select id="pay-student-sel" class="fi"></select></div>
+      <div class="field"><label>Amount Received (₱)</label><input type="number" id="pay-amount" placeholder="0.00" step="0.01"></div>
+      <div class="field"><label>Payment Type</label><select id="pay-type"><option value="Full">Full payment</option><option value="Partial">Partial payment</option><option value="Scholarship">Scholarship</option></select></div>
+      <div class="field"><label>Reference / Notes</label><input type="text" id="pay-notes" placeholder="GCash ref, cash, etc."></div>
+      <button class="btn-primary" style="background:var(--purple)" onclick="doAddPayment()">Record Payment</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px">
+      <span class="sync-dot sync-ok"></span>Connected — records sync to Google Sheets
+    </div>
+  </div>
+  <div class="bnav" style="--active-color:var(--purple)">
+    <button class="ni" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-r-qr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Scan</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>Payment</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     RECORD BALANCES
+══════════════════════════════════════════ -->
+<div class="screen" id="s-r-balances">
+  <div class="topbar" style="background:var(--purple)">
+    <button class="topbar-back" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Student Balances</span>
+  </div>
+  <div class="body">
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--purple),var(--purple-light))">
+      <div style="color:rgba(255,255,255,0.65);font-size:11px;font-weight:500">Total class fee per student</div>
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:700;color:#fff;margin-top:2px" id="r-total-fee">₱—</div>
+    </div>
+    <div class="stat-grid" id="r-bal-summary"></div>
+    <div class="card" style="padding:0 16px" id="r-bal-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--purple)">
+    <button class="ni" onclick="go('s-record-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-r-qr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Scan</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Balances</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     FACULTY DEVOTIONAL & ACTIVITIES
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-devotional">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Devotional &amp; Activities</span>
+  </div>
+  <div class="body">
+    <div style="background:linear-gradient(135deg,#2d6a4f,#52b788);border-radius:12px;padding:14px 16px;margin-bottom:14px;color:#fff">
+      <div style="font-size:11px;opacity:0.8;margin-bottom:2px">63-Day Program</div>
+      <div style="font-size:15px;font-weight:700">Click a student to mark their daily devotionals</div>
+    </div>
+    <div class="card" style="padding:0 16px" id="f-devotional-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-f-students')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Attendance</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Devot.</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FACULTY DEVOTIONAL — STUDENT DETAIL
+══════════════════════════════════════════ -->
+<div class="screen" id="s-f-devot-detail">
+  <div class="topbar" style="background:var(--navy)">
+    <button class="topbar-back" onclick="go('s-f-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="f-devot-detail-name">Devotional</span>
+    <span id="f-devot-counter" style="font-size:11px;color:rgba(255,255,255,0.8);white-space:nowrap">0/63</span>
+  </div>
+  <div class="body">
+    <div style="background:#e8f5ee;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#2d6a4f;line-height:1.5">
+      ✅ Check each day the student completed their devotional/activity. Progress is saved on this device.
+    </div>
+    <div id="f-devot-checklist"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--navy)">
+    <button class="ni" onclick="go('s-faculty-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active" onclick="go('s-f-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Back</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN DEVOTIONAL RECORDS
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-devotional">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">Devotional &amp; Activities Record</span>
+  </div>
+  <div class="body">
+    <div style="background:linear-gradient(135deg,#2d6a4f,#52b788);border-radius:12px;padding:14px 16px;margin-bottom:14px;color:#fff">
+      <div style="font-size:11px;opacity:0.8;margin-bottom:2px">63-Day Program</div>
+      <div style="font-size:15px;font-weight:700">Select a table to view student devotional completion</div>
+    </div>
+    <div id="a-devot-tables"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Devot.</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN DEVOTIONAL — TABLE DETAIL
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-devot-table">
+  <div class="topbar" style="background:var(--green)">
+    <button class="topbar-back" onclick="go('s-a-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title" id="a-devot-table-title">Table Devotional</span>
+  </div>
+  <div class="body">
+    <div class="card" style="padding:0 16px" id="a-devot-table-list"></div>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni active" onclick="go('s-a-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Back</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
+
+
+
+</div><!-- /desktop-main -->
+</div><!-- /app -->
+
+
+
+<!-- SERVICE WORKER registration -->
+
+
+<script src="js/script1.js"></script>
+<script src="js/script2.js"></script>
+
+<!-- ══════════════════════════════════════════
+     ANDROID INSTALL BANNER (bottom bar)
+══════════════════════════════════════════ -->
+<div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;padding:14px 16px;background:#1a3a5c;color:#fff;box-shadow:0 -4px 20px rgba(0,0,0,0.3);align-items:center;gap:12px;max-width:480px;margin:0 auto">
+  <img src="icon-192.png" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:14px">Install SOL 1</div>
+    <div style="font-size:12px;opacity:0.75;margin-top:2px">Add to Home Screen for the full app experience</div>
+  </div>
+  <button id="pwa-install-btn" style="background:#2d7a4f;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">Install</button>
+  <button onclick="document.getElementById('pwa-install-banner').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1">✕</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     iOS INSTALL MODAL (step-by-step guide)
+══════════════════════════════════════════ -->
+<div id="ios-install-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);align-items:flex-end;justify-content:center;padding:0">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 32px;box-shadow:0 -8px 40px rgba(0,0,0,0.25);animation:slideUp 0.3s ease">
+    <!-- Handle bar -->
+    <div style="display:flex;justify-content:center;padding:12px 0 4px">
+      <div style="width:40px;height:4px;background:#e0e0e0;border-radius:4px"></div>
+    </div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="icon-192.png" style="width:48px;height:48px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.15)">
+        <div>
+          <div style="font-family:var(--font-head);font-size:16px;font-weight:700;color:#1a1a2e">Install SOL 1</div>
+          <div style="font-size:12px;color:#9aa3b0;margin-top:1px">Add to your Home Screen</div>
+        </div>
+      </div>
+      <button onclick="closeIOSModal()" style="background:#f0f2f5;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;color:#9aa3b0;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:#f0f2f5;margin:0 20px"></div>
+
+    <!-- Steps -->
+    <div style="padding:20px 20px 0">
+      <div style="font-size:12px;font-weight:700;color:#9aa3b0;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:14px">Follow these steps</div>
+
+      <!-- Step 1 -->
+      <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#1a3a5c;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="flex:1;padding-top:4px">
+          <div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:2px">Tap the Share button</div>
+          <div style="font-size:12px;color:#9aa3b0">At the bottom of your Safari browser</div>
+          <!-- Share icon illustration -->
+          <div style="margin-top:10px;background:#f0f2f5;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1a3a5c">Share</div>
+              <div style="font-size:11px;color:#9aa3b0">Looks like this in Safari</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#1a3a5c;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="flex:1;padding-top:4px">
+          <div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:2px">Scroll down and tap</div>
+          <div style="font-size:12px;color:#9aa3b0">Find this option in the share sheet</div>
+          <!-- Add to Home Screen illustration -->
+          <div style="margin-top:10px;background:#f0f2f5;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:8px;background:#fff;border:1.5px solid #dde;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1a3a5c">Add to Home Screen</div>
+              <div style="font-size:11px;color:#9aa3b0">Tap this in the share menu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#2d6a4f;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="flex:1;padding-top:4px">
+          <div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:2px">Tap <strong style="color:#2d6a4f">Add</strong> to confirm</div>
+          <div style="font-size:12px;color:#9aa3b0">SOL 1 will appear on your Home Screen</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div style="margin:20px 20px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 14px;display:flex;gap:8px;align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">⚠️</span>
+      <div style="font-size:12px;color:#92400e">Make sure you're using <strong>Safari</strong> — this won't work in Chrome or other browsers on iPhone.</div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+</style>
+
+<!-- ══════════════════════════════════════════
+     iOS INSTALL BANNER (bottom bar for Safari)
+══════════════════════════════════════════ -->
+<div id="ios-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99998;padding:12px 16px;background:#1a3a5c;color:#fff;box-shadow:0 -4px 20px rgba(0,0,0,0.3);align-items:center;gap:12px;max-width:480px;margin:0 auto">
+  <img src="icon-192.png" style="width:38px;height:38px;border-radius:9px;flex-shrink:0">
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:13px">Install SOL 1 on iPhone</div>
+    <div style="font-size:11px;opacity:0.7;margin-top:1px">Tap to see how →</div>
+  </div>
+  <button onclick="showIOSModal()" style="background:#2d7a4f;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">How to Install</button>
+  <button onclick="dismissIOSBanner()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;padding:2px;flex-shrink:0;line-height:1">✕</button>
+</div>
+
+<script>
+// ── Android / Chrome install prompt ──────────────────
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.style.display = 'flex';
+});
+document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  const { outcome } = await _deferredPrompt.userChoice;
+  _deferredPrompt = null;
+  document.getElementById('pwa-install-banner').style.display = 'none';
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-banner').style.display = 'none';
+  _deferredPrompt = null;
+});
+
+// ── iOS / Safari install guide ────────────────────────
+function isIOSSafari() {
+  const ua = window.navigator.userAgent;
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  // Safari on iOS doesn't have 'CriOS' (Chrome) or 'FxiOS' (Firefox)
+  const isSafari = /safari/i.test(ua) && !/crios|fxios|opios|mercury/i.test(ua);
+  // Not already installed as standalone
+  const isStandalone = window.navigator.standalone === true;
+  return isIOS && isSafari && !isStandalone;
+}
+
+function showIOSModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeIOSModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (modal) modal.style.display = 'none';
+}
+function dismissIOSBanner() {
+  const banner = document.getElementById('ios-install-banner');
+  if (banner) banner.style.display = 'none';
+  sessionStorage.setItem('ios-banner-dismissed', '1');
+}
+
+// Close iOS modal when tapping backdrop
+document.getElementById('ios-install-modal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeIOSModal();
+});
+
+// Show iOS banner after a short delay (only once per session)
+window.addEventListener('load', () => {
+  if (isIOSSafari() && !sessionStorage.getItem('ios-banner-dismissed')) {
+    setTimeout(() => {
+      const banner = document.getElementById('ios-install-banner');
+      if (banner) banner.style.display = 'flex';
+    }, 2500);
+  }
+});
+</script>
+
+<script>
+// ═══════════════════════════════════════════
+// DESKTOP SIDEBAR CONTROLLER
+// ═══════════════════════════════════════════
+function updateSidebar() {
+  if (typeof APP === 'undefined') return;
+  var faculty = APP.currentFaculty;
+  var portalScreens = ['s-portal','s-faculty-login','s-admin-login','s-record-login'];
+  var isPortalScreen = portalScreens.includes(APP.currentScreen);
+  var appEl = document.getElementById('app');
+  var sidebarEl = document.getElementById('desktop-sidebar');
+
+  // KEY FIX: toggle has-sidebar class on #app
+  // Portal/login = no sidebar, plain flex layout
+  // Logged in = grid layout with sidebar
+  if (appEl) {
+    appEl.classList.toggle('has-sidebar', !isPortalScreen && !!faculty);
+  }
+
+  if (!faculty) {
+    if (sidebarEl) sidebarEl.style.display = 'none';
+    return;
+  }
+
+  if (sidebarEl) sidebarEl.style.display = isPortalScreen ? 'none' : '';
+
+  // Update sidebar user info
+  var userName = document.getElementById('sidebar-user-name');
+  var userRole = document.getElementById('sidebar-user-role');
+  var userAv   = document.getElementById('sidebar-user-av');
+  var sidebarBot = document.getElementById('sidebar-bottom');
+  if (userName) userName.textContent = faculty['Full Name'] || '–';
+  if (userRole) userRole.textContent = faculty['Role'] || '–';
+  if (userAv)   userAv.textContent   = (faculty['Full Name'] || '?')[0].toUpperCase();
+  if (sidebarBot) sidebarBot.style.display = isPortalScreen ? 'none' : 'block';
+
+  // Show correct nav — prefer the nav that matches the screen actually being
+  // shown (needed for dual-role users like a Director who is also a Table
+  // Guide and can switch between the Admin view and their own Table Guide view).
+  ['sidebar-portal-nav','sidebar-faculty-nav','sidebar-admin-nav','sidebar-record-nav']
+    .forEach(id => { var el = document.getElementById(id); if(el) el.style.display = 'none'; });
+
+  var facultyScreens = ['s-faculty-home','s-f-lessons','s-f-students','s-f-payment','s-f-credits','s-add-credit','s-f-devotional','s-f-devot-detail'];
+  var adminScreens   = ['s-admin-home','s-a-student-att','s-a-faculty-att','s-a-tables','s-a-table-detail','s-a-leaderboard','s-a-makeup','s-a-dropped','s-a-devotional','s-a-devot-table'];
+  var recordScreens  = ['s-record-home','s-r-qr','s-r-attendance','s-r-payment','s-r-balances'];
+
+  var role = typeof getRoleType === 'function' ? getRoleType(faculty['Role']) : 'faculty';
+  var navId;
+  if (facultyScreens.indexOf(APP.currentScreen) !== -1) navId = 'sidebar-faculty-nav';
+  else if (adminScreens.indexOf(APP.currentScreen) !== -1) navId = 'sidebar-admin-nav';
+  else if (recordScreens.indexOf(APP.currentScreen) !== -1) navId = 'sidebar-record-nav';
+  else navId = role === 'admin' ? 'sidebar-admin-nav' : role === 'record' ? 'sidebar-record-nav' : 'sidebar-faculty-nav';
+
+  var nav = document.getElementById(navId);
+  if (nav && !isPortalScreen) { nav.style.display = 'flex'; nav.style.flexDirection = 'column'; }
+
+  // Dual-role helpers: show "My Table" inside the Admin sidebar only if this
+  // person has a Table Assigned, and show "Back to Admin" inside the Faculty
+  // sidebar only if this person's role resolves to admin.
+  var myTableBtn = document.getElementById('sidebar-my-table-btn');
+  if (myTableBtn) myTableBtn.style.display = (APP.currentFaculty && APP.currentFaculty['Table Assigned']) ? '' : 'none';
+  var backToAdminBtn = document.getElementById('sidebar-back-to-admin-btn');
+  if (backToAdminBtn) backToAdminBtn.style.display = (role === 'admin') ? '' : 'none';
+
+  // Same "Back to Admin" logic, but for the mobile Table Guide screen — the
+  // menu item and bottom-nav icon existed in the HTML but nothing ever
+  // toggled them on, so mobile admins had no visible way back.
+  var backToAdminWrapMobile = document.getElementById('f-back-to-admin-wrap');
+  if (backToAdminWrapMobile) backToAdminWrapMobile.style.display = (role === 'admin') ? '' : 'none';
+  var backToAdminBnavMobile = document.getElementById('f-bnav-admin');
+  if (backToAdminBnavMobile) backToAdminBnavMobile.style.display = (role === 'admin') ? '' : 'none';
+
+  // Same helper, but for the mobile "MANAGE" menu on the admin home screen —
+  // this block existed in the HTML but was never actually wired up, so it
+  // never showed on phones.
+  var myTableWrapMobile = document.getElementById('a-my-table-wrap');
+  var assignedTable = APP.currentFaculty && APP.currentFaculty['Table Assigned'];
+  if (myTableWrapMobile) myTableWrapMobile.style.display = assignedTable ? '' : 'none';
+  var myTableTitleMobile = document.getElementById('a-my-table-title');
+  if (myTableTitleMobile && assignedTable) myTableTitleMobile.textContent = getTableLabel(assignedTable) + ' Guide View';
+
+  // Dropped badge
+  var sbBadge = document.getElementById('sb-dropped-badge');
+  if (sbBadge) {
+    var count = APP.students.filter(function(s){ return (s['Status']||'').toLowerCase() === 'dropped'; }).length;
+    sbBadge.textContent = count;
+    sbBadge.style.display = count > 0 ? '' : 'none';
+  }
+
+  // Active sidebar button highlight
+  document.querySelectorAll('.sidebar-btn').forEach(function(b){ b.classList.remove('active'); });
+  var screenNavMap = {
+    's-faculty-home':'sidebar-faculty-nav','s-f-lessons':'sidebar-faculty-nav',
+    's-f-students':'sidebar-faculty-nav','s-f-payment':'sidebar-faculty-nav',
+    's-f-credits':'sidebar-faculty-nav','s-add-credit':'sidebar-faculty-nav',
+    's-f-devotional':'sidebar-faculty-nav','s-f-devot-detail':'sidebar-faculty-nav',
+    's-admin-home':'sidebar-admin-nav','s-a-student-att':'sidebar-admin-nav',
+    's-a-tables':'sidebar-admin-nav','s-a-table-detail':'sidebar-admin-nav',
+    's-a-leaderboard':'sidebar-admin-nav','s-a-makeup':'sidebar-admin-nav',
+    's-a-dropped':'sidebar-admin-nav','s-a-devotional':'sidebar-admin-nav',
+    's-a-devot-table':'sidebar-admin-nav','s-record-home':'sidebar-record-nav',
+    's-r-qr':'sidebar-record-nav','s-r-attendance':'sidebar-record-nav',
+    's-r-payment':'sidebar-record-nav','s-r-balances':'sidebar-record-nav'
+  };
+  var activeNav = document.getElementById(screenNavMap[APP.currentScreen]);
+  if (activeNav) {
+    activeNav.querySelectorAll('.sidebar-btn').forEach(function(b){
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(APP.currentScreen))
+        b.classList.add('active');
+    });
+  }
+}
+
+// Patch go() to also update sidebar
+if (typeof go === 'function') {
+  var _origGo = go;
+  window.go = function(id) { _origGo(id); updateSidebar(); };
+}
+
+// Patch logout to reset sidebar
+if (typeof logout === 'function') {
+  var _origLogout = logout;
+  window.logout = function() { _origLogout(); updateSidebar(); };
+}
+
+document.addEventListener('DOMContentLoaded', function(){ updateSidebar(); });
+</script>
+
+
+<script>
+// ══════════════════════════════════════════
+// RIPPLE EFFECT
+// ══════════════════════════════════════════
+function createRipple(event) {
+  const el = event.currentTarget;
+  const ripple = document.createElement('span');
+  ripple.classList.add('ripple-effect');
+  const rect = el.getBoundingClientRect();
+  const x = (event.clientX ?? rect.left + rect.width / 2) - rect.left;
+  const y = (event.clientY ?? rect.top + rect.height / 2) - rect.top;
+  ripple.style.left = x + 'px';
+  ripple.style.top  = y + 'px';
+  const bg = window.getComputedStyle(el).backgroundColor;
+  if (bg && (bg.includes('255, 255, 255') || bg === 'rgba(0, 0, 0, 0)')) {
+    ripple.style.background = 'rgba(0,0,0,0.1)';
+  }
+  el.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+}
+function attachRipples() {
+  const sel = '.portal-btn,.menu-item,.btn-primary,.sidebar-btn,.topbar-back,.ni,.reason-btn,.week-btn';
+  document.querySelectorAll(sel).forEach(el => {
+    if (!el.dataset.ripple) {
+      el.dataset.ripple = '1';
+      el.addEventListener('click', createRipple);
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  attachRipples();
+  new MutationObserver(attachRipples).observe(
+    document.getElementById('app'), { childList: true, subtree: true }
+  );
+});
+</script>
+</body>
+</html>

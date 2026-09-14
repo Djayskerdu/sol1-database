@@ -1,0 +1,37 @@
+{
+  "name": "SOL 1 — School of Leaders 1",
+  "short_name": "SOL 1",
+  "description": "School of Leaders 1 class management app",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Faculty & Staff",
+      "url": "/?portal=faculty",
+      "description": "Go to Faculty & Staff portal"
+    },
+    {
+      "name": "QR Scan",
+      "url": "/?portal=record",
+      "description": "Go to QR Scan portal"
+    }
+  ]
+}
