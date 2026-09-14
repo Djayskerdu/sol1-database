@@ -1447,15 +1447,13 @@ function closeDropStudentModal() {
 // ═══════════════════════════════════════════
 let html5QrScanner = null;
 let qrScanCooldown = false;
-let nfcController  = null;
-let nfcActive       = false;
 
 // ═══════════════════════════════════════════
-// QR TAB SWITCHER (Scan QR / Tap NFC / QR Generator)
+// QR TAB SWITCHER (Scan QR / QR Generator)
 // ═══════════════════════════════════════════
 function switchQRTab(tab) {
-  const panels = { scan: document.getElementById('qr-panel-scan'), tap: document.getElementById('qr-panel-tap'), gen: document.getElementById('qr-panel-gen') };
-  const btns   = { scan: document.getElementById('qr-tab-scan'),   tap: document.getElementById('qr-tab-tap'),   gen: document.getElementById('qr-tab-gen') };
+  const panels = { scan: document.getElementById('qr-panel-scan'), gen: document.getElementById('qr-panel-gen') };
+  const btns   = { scan: document.getElementById('qr-tab-scan'),   gen: document.getElementById('qr-tab-gen') };
   const statusBar = document.getElementById('qr-status-bar');
   const resultEl  = document.getElementById('qr-result');
 
@@ -1467,26 +1465,13 @@ function switchQRTab(tab) {
     }
   });
 
-  // Stop whichever capture mode isn't active
+  // Stop the camera if we're leaving the scan tab
   if (tab !== 'scan' && html5QrScanner) stopQRCamera();
-  if (tab !== 'tap'  && nfcActive)      stopNFCTap();
 
   if (tab === 'gen') {
     if (statusBar) statusBar.style.display = 'none';
     if (resultEl)  resultEl.innerHTML = '';
     renderQRGenList();
-  } else if (tab === 'tap') {
-    const unsupported = document.getElementById('nfc-unsupported');
-    const startBtn = document.getElementById('nfc-start-btn');
-    if (!isNFCSupported()) {
-      if (unsupported) unsupported.style.display = '';
-      if (startBtn) startBtn.style.display = 'none';
-    } else {
-      if (unsupported) unsupported.style.display = 'none';
-      if (startBtn) startBtn.style.display = '';
-    }
-    setScanStatus('idle', '');
-    if (resultEl) resultEl.innerHTML = '';
   } else {
     setScanStatus('idle', '');
     if (resultEl) resultEl.innerHTML = '';
@@ -1592,123 +1577,9 @@ function stopQRCamera() {
   setScanStatus('idle', '');
 }
 
-// ═══════════════════════════════════════════
-// TAP ATTENDANCE — Web NFC
-// ═══════════════════════════════════════════
-function isNFCSupported() {
-  return 'NDEFReader' in window;
-}
-
-async function startNFCTap() {
-  const startBtn = document.getElementById('nfc-start-btn');
-  const stopBtn  = document.getElementById('nfc-stop-btn');
-  const icon     = document.getElementById('nfc-tap-icon');
-  const label    = document.getElementById('nfc-tap-label');
-  const unsupported = document.getElementById('nfc-unsupported');
-
-  // Unlock audio on this user gesture so beeps work later
-  getAudioCtx();
-
-  if (!isNFCSupported()) {
-    if (unsupported) unsupported.style.display = '';
-    showToast('⚠️ NFC tap not supported on this device/browser');
-    return;
-  }
-  if (unsupported) unsupported.style.display = 'none';
-
-  try {
-    nfcController = new AbortController();
-    const ndef = new NDEFReader();
-    await ndef.scan({ signal: nfcController.signal });
-
-    nfcActive = true;
-    if (startBtn) startBtn.style.display = 'none';
-    if (stopBtn)  stopBtn.style.display  = '';
-    if (label)    label.textContent = 'Waiting for tap…';
-    if (icon)     icon.style.background = 'rgba(255,255,255,0.15)';
-    setScanStatus('scanning', 'Tap mode active — hold a tag near the phone');
-
-    ndef.onreading = (event) => {
-      if (icon) {
-        icon.style.transform = 'scale(1.15)';
-        icon.style.background = 'rgba(255,255,255,0.35)';
-        setTimeout(() => { icon.style.transform = 'scale(1)'; icon.style.background = 'rgba(255,255,255,0.15)'; }, 350);
-      }
-      let payload = '';
-      for (const record of event.message.records) {
-        if (record.recordType === 'text') {
-          try {
-            const decoder = new TextDecoder(record.encoding || 'utf-8');
-            payload = decoder.decode(record.data);
-          } catch(e) { /* ignore malformed record */ }
-          if (payload) break;
-        } else if (record.recordType === 'url') {
-          try { payload = new TextDecoder().decode(record.data); } catch(e) {}
-        }
-      }
-      if (!payload) {
-        setScanStatus('error', 'Blank or unrecognised tag — nothing written to it yet');
-        showToast('⚠️ Empty NFC tag — write it first in QR Generator');
-        return;
-      }
-      onQRCodeScanned(payload);
-      if (label) label.textContent = 'Waiting for tap…';
-    };
-
-    ndef.onreadingerror = () => {
-      setScanStatus('error', 'Could not read that tag — try again');
-      playScanSound('error');
-    };
-  } catch (err) {
-    nfcActive = false;
-    if (startBtn) startBtn.style.display = '';
-    if (stopBtn)  stopBtn.style.display  = 'none';
-    if (String(err).toLowerCase().includes('permission')) {
-      showToast('⚠️ NFC permission denied — allow it in browser settings');
-    } else {
-      showToast('⚠️ Could not start NFC: ' + err);
-    }
-    setScanStatus('error', 'NFC failed to start');
-  }
-}
-
-function stopNFCTap() {
-  if (nfcController) { nfcController.abort(); nfcController = null; }
-  nfcActive = false;
-  const startBtn = document.getElementById('nfc-start-btn');
-  const stopBtn  = document.getElementById('nfc-stop-btn');
-  const label    = document.getElementById('nfc-tap-label');
-  if (startBtn) startBtn.style.display = '';
-  if (stopBtn)  stopBtn.style.display  = 'none';
-  if (label)    label.textContent = 'Tap mode is off';
-  setScanStatus('idle', '');
-}
-
-// Write the currently-shown QR payload onto a blank NFC tag
-async function writeNFCTag(btnEl) {
-  if (!qrGenCurrentPayload) return;
-  if (!isNFCSupported()) {
-    showToast('⚠️ NFC writing not supported on this device/browser');
-    return;
-  }
-  const originalText = btnEl ? btnEl.textContent : '';
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '📡 Hold a blank tag to the phone…'; }
-  try {
-    const ndef = new NDEFReader();
-    await ndef.write({ records: [{ recordType: 'text', data: qrGenCurrentPayload }] });
-    showToast('✅ Tag written for ' + (qrGenCurrentName || 'this person'));
-    if (btnEl) btnEl.textContent = '✅ Written!';
-    setTimeout(() => { if (btnEl) { btnEl.disabled = false; btnEl.textContent = originalText; } }, 1800);
-  } catch (err) {
-    showToast('⚠️ Could not write tag: ' + err);
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = originalText; }
-  }
-}
-
 // ─── "Tap feel" feedback: a short beep + phone vibration on every read ───
 // Runs on ANY decoded QR (valid or not) so the person feels an immediate
-// physical response the instant their phone is close enough — same instant
-// feedback you'd get from a real NFC tap, minus needing NFC hardware.
+// physical response the instant their phone is close enough to scan.
 function playTapFeedback(success) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2062,14 +1933,6 @@ function openQRModal(id, name, sub) {
   const qrPayload = QR_PREFIX + String(id);
   qrGenCurrentPayload = qrPayload;
 
-  // Show/hide the "Write to Tag" button depending on NFC support
-  const writeBtn = document.getElementById('qrgen-write-nfc-btn');
-  if (writeBtn) {
-    writeBtn.style.display = isNFCSupported() ? '' : 'none';
-    writeBtn.disabled = false;
-    writeBtn.textContent = '📳 Write to Tag';
-  }
-
   // Clear previous
   if (qrWrap) qrWrap.innerHTML = '<div style="color:#999;font-size:13px;padding:20px">Generating…</div>';
 
@@ -2132,60 +1995,11 @@ function downloadQRCode() {
   link.click();
 }
 
-// ═══════════════════════════════════════════
-// PRINT ID CARD — church logo + SOL logo + QR, sized in real
-// inches (see .id-card in styles.css) so it prints true-to-size
-// regardless of printer/browser scaling settings.
-// ═══════════════════════════════════════════
-function printIDCard() {
-  if (!qrGenCurrentPayload) { showToast('⚠️ Generate a QR first'); return; }
-
-  document.getElementById('print-card-name').textContent = qrGenCurrentName || '';
-  const subSource = document.getElementById('qrgen-modal-id');
-  document.getElementById('print-card-sub').textContent = subSource ? subSource.textContent : '';
-
-  // Render a fresh, high-res QR just for print (independent of the on-screen
-  // 160px preview) so it stays crisp at 2in physical size on paper.
-  const qrWrap = document.getElementById('print-card-qr-wrap');
-  qrWrap.innerHTML = '';
-  const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'absolute';
-  tempDiv.style.visibility = 'hidden';
-  document.body.appendChild(tempDiv);
-
-  new QRCode(tempDiv, {
-    text: qrGenCurrentPayload,
-    width: 500, height: 500,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-
-  setTimeout(() => {
-    const generatedCanvas = tempDiv.querySelector('canvas');
-    const generatedImg    = tempDiv.querySelector('img');
-    if (generatedCanvas) {
-      const img = document.createElement('img');
-      img.src = generatedCanvas.toDataURL('image/png');
-      qrWrap.appendChild(img);
-    } else if (generatedImg) {
-      const img = document.createElement('img');
-      img.src = generatedImg.src;
-      qrWrap.appendChild(img);
-    }
-    document.body.removeChild(tempDiv);
-
-    // Give the browser a beat to paint the image before opening the print dialog
-    setTimeout(() => window.print(), 150);
-  }, 200);
-}
-
-// Stop camera / NFC tap when navigating away
+// Stop camera when navigating away
 (function() {
   const _origGo = go;
   go = function(id) {
     if (id !== 's-r-qr' && html5QrScanner) stopQRCamera();
-    if (id !== 's-r-qr' && nfcActive) stopNFCTap();
     _origGo(id);
   };
 })();
