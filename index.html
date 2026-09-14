@@ -830,9 +830,14 @@
   <div class="body">
     <!-- Tab bar -->
     <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin-bottom:14px;border:1.5px solid var(--purple)">
-      <button id="qr-tab-scan" onclick="switchQRTab('scan')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">📷 Scan QR</button>
-      <button id="qr-tab-gen" onclick="switchQRTab('gen')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#fff;color:var(--purple);border:none;cursor:pointer">🔲 QR Generator</button>
+      <button id="qr-tab-scan" onclick="switchQRTab('scan')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:var(--purple);color:#fff;border:none;cursor:pointer">📷 Scan QR</button>
+      <button id="qr-tab-tap" onclick="switchQRTab('tap')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:#fff;color:var(--purple);border:none;border-left:1.5px solid var(--purple);border-right:1.5px solid var(--purple);cursor:pointer">📳 Tap NFC</button>
+      <button id="qr-tab-gen" onclick="switchQRTab('gen')" style="flex:1;padding:9px 2px;font-size:12px;font-weight:600;background:#fff;color:var(--purple);border:none;cursor:pointer">🔲 QR Generator</button>
     </div>
+
+    <!-- Live status bar + result — shared between Scan and Tap tabs -->
+    <div id="qr-status-bar" style="display:none;margin:0 0 10px;padding:10px 14px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;transition:background 0.3s"></div>
+    <div id="qr-result"></div>
 
     <!-- SCAN TAB -->
     <div id="qr-panel-scan">
@@ -849,9 +854,25 @@
         <button onclick="stopQRCamera()" id="qr-stop-btn" style="display:none;margin-top:12px;background:rgba(255,0,0,0.3);color:#fff;border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">⏹ Stop Camera</button>
         <div id="qr-time-rule" style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:10px"></div>
       </div>
-      <!-- Live status bar -->
-      <div id="qr-status-bar" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;transition:background 0.3s"></div>
-      <div id="qr-result"></div>
+    </div>
+
+    <!-- TAP (NFC) TAB -->
+    <div id="qr-panel-tap" style="display:none">
+      <div class="qr-scan-box" style="background:linear-gradient(135deg,var(--purple),var(--purple-light));padding:20px 16px;border-radius:14px;text-align:center;margin-bottom:12px">
+        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:14px;font-weight:500">Hold the student's or faculty's NFC card/tag against the back of this phone</div>
+        <div id="nfc-tap-icon" style="width:110px;height:110px;margin:0 auto;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:44px;transition:transform 0.15s, background 0.15s">📳</div>
+        <div id="nfc-tap-label" style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:12px;font-weight:500">Tap mode is off</div>
+        <button onclick="startNFCTap()" id="nfc-start-btn" style="margin-top:14px;background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.5);border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">▶ Start Tap Mode</button>
+        <button onclick="stopNFCTap()" id="nfc-stop-btn" style="display:none;margin-top:14px;background:rgba(255,0,0,0.3);color:#fff;border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">⏹ Stop Tap Mode</button>
+        <div id="qr-time-rule-tap" style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:10px"></div>
+      </div>
+      <div id="nfc-unsupported" style="display:none;background:#fff3cd;border-left:4px solid #e8a020;border-radius:10px;padding:12px 14px;font-size:12px;color:#8a5200;line-height:1.6;margin-bottom:12px">
+        ⚠️ <strong>NFC tap isn't available on this device/browser.</strong><br>
+        Web NFC currently only works on <strong>Android phones using Google Chrome</strong>, over a secure (HTTPS) connection. iPhones and most other browsers don't support it — please use <strong>Scan QR</strong> instead on those devices.
+      </div>
+      <div style="background:#f8f4ff;border-radius:10px;padding:12px 14px;font-size:11px;color:#ae3ec9;line-height:1.6;margin-bottom:12px">
+        <strong>💡 Setting up tags:</strong> go to the <strong>QR Generator</strong> tab, pick a student or faculty member, then tap <strong>"Write to Tag"</strong> and hold a blank NFC sticker/card to the phone. Each person needs their own tag, written once.
+      </div>
     </div>
 
       <!-- Time rules reminder -->
@@ -894,8 +915,9 @@
           <!-- Hidden canvas used for download -->
           <canvas id="qrgen-canvas" style="display:none"></canvas>
           <div id="qrgen-payload" style="font-size:9px;color:#bbb;margin-top:6px;word-break:break-all;text-align:center"></div>
-          <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+          <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
             <button onclick="downloadQRCode()" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">⬇ Save PNG</button>
+            <button onclick="writeNFCTag(this)" id="qrgen-write-nfc-btn" style="display:none;background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">📳 Write to Tag</button>
             <button onclick="closeQRModal()" style="background:#f0f0f0;color:var(--text2);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Close</button>
           </div>
         </div>
