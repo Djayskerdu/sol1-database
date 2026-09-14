@@ -555,3 +555,83 @@ input, select, button, textarea { font-family: var(--font); }
   to   { transform: scale(1); }
 }
 .ni.active { animation: navPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ═══════════════════════════════════════════
+   PRINTABLE ID CARD (QR Generator → Print Card)
+   Card is sized in real inches so it prints at true
+   physical size regardless of printer/browser scaling.
+   ═══════════════════════════════════════════ */
+#print-card-root { display: none; }
+
+.id-card {
+  width: 2.6in;
+  height: 4in;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0.14in;
+  padding: 0.18in 0.16in;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #1a1a2e;
+}
+.id-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.id-card-header img { height: 0.5in; width: auto; }
+.id-card-title {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.25;
+  margin: 0.08in 0 0.06in;
+  color: #6a1b9a;
+}
+.id-card-qr-wrap {
+  margin: 0.08in 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.id-card-qr-wrap img, .id-card-qr-wrap canvas {
+  width: 2in;
+  height: 2in;
+}
+.id-card-name {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 0.04in;
+}
+.id-card-sub {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+  margin-top: 2px;
+}
+.id-card-footer {
+  margin-top: auto;
+  font-size: 7px;
+  color: #999;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #print-card-root, #print-card-root * { visibility: visible; }
+  #print-card-root {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  @page { size: auto; margin: 0.25in; }
+}

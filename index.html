@@ -842,7 +842,7 @@
     <!-- SCAN TAB -->
     <div id="qr-panel-scan">
       <div class="qr-scan-box" style="background:linear-gradient(135deg,var(--purple),var(--purple-light));padding:16px;border-radius:14px;text-align:center;margin-bottom:12px">
-        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:10px;font-weight:500">Hold your QR code close to the camera — no need to aim, just get close</div>
+        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:10px;font-weight:500">Bring your QR code right up to this screen — near the top, where the camera is</div>
         <div id="qr-reader" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;overflow:hidden;background:#000"></div>
         <div id="qr-reader-placeholder" style="width:100%;max-width:300px;margin:0 auto;border-radius:10px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;min-height:200px">
           <div style="text-align:center">
@@ -917,10 +917,26 @@
           <div id="qrgen-payload" style="font-size:9px;color:#bbb;margin-top:6px;word-break:break-all;text-align:center"></div>
           <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
             <button onclick="downloadQRCode()" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">⬇ Save PNG</button>
+            <button onclick="printIDCard()" id="qrgen-print-btn" style="background:#e8a020;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">🖨️ Print ID Card</button>
             <button onclick="writeNFCTag(this)" id="qrgen-write-nfc-btn" style="display:none;background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">📳 Write to Tag</button>
             <button onclick="closeQRModal()" style="background:#f0f0f0;color:var(--text2);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Close</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Printable ID card — hidden on screen, shown only inside window.print() via @media print -->
+    <div id="print-card-root">
+      <div class="id-card">
+        <div class="id-card-header">
+          <img src="assets/church-logo.png" alt="Church logo">
+          <img src="assets/sol-logo.png" alt="School of Leaders logo">
+        </div>
+        <div class="id-card-title">THE REDEEMED CHRISTIAN FELLOWSHIP<br>SCHOOL OF LEADERS 1</div>
+        <div class="id-card-qr-wrap" id="print-card-qr-wrap"></div>
+        <div class="id-card-name" id="print-card-name"></div>
+        <div class="id-card-sub" id="print-card-sub"></div>
+        <div class="id-card-footer">Tap this QR at the entrance to check in</div>
       </div>
     </div>
   </div>

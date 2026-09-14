@@ -1556,18 +1556,20 @@ function startQRCamera() {
 
   html5QrScanner = new Html5Qrcode('qr-reader');
   html5QrScanner.start(
-    { facingMode: 'environment' },
-    // Bigger box (most of the 300px reader area) so people can just hold their
-    // phone close without carefully lining it up — feels more like a "tap"
-    // than a "scan". Higher fps + faster internal detection = near-instant read.
-    { fps: 20, qrbox: { width: 270, height: 270 }, aspectRatio: 1.0, disableFlip: true },
+    // FRONT camera (not rear) — mount this phone screen-facing-out at the
+    // entrance. No qrbox passed = scans the ENTIRE frame, not just a centered
+    // square, so the QR doesn't need to be perfectly centered — just fully
+    // visible somewhere in view. That's the most room we can give people
+    // before the code gets cropped and becomes unreadable.
+    { facingMode: 'user' },
+    { fps: 20, aspectRatio: 1.0, disableFlip: true },
     onQRCodeScanned,
     (errorMsg) => {
       // Called every frame when no QR found — only update if not in cooldown
-      if (!qrScanCooldown) setScanStatus('scanning', 'Ready — hold QR close to the camera');
+      if (!qrScanCooldown) setScanStatus('scanning', 'Ready — bring QR up to the screen');
     }
   ).then(() => {
-    setScanStatus('scanning', 'Ready — hold QR close to the camera');
+    setScanStatus('scanning', 'Ready — bring QR up to the screen');
   }).catch(err => {
     setScanStatus('error', 'Camera error: ' + err);
     showToast('Camera error: ' + err);
@@ -1745,7 +1747,7 @@ async function onQRCodeScanned(decodedText) {
     showToast('⚠️ Not a SOL 1 QR code');
     setTimeout(() => {
       qrScanCooldown = false;
-      setScanStatus('scanning', 'Ready — hold QR close to the camera');
+      setScanStatus('scanning', 'Ready — bring QR up to the screen');
     }, 1500);
     return;
   }
@@ -1759,7 +1761,7 @@ async function onQRCodeScanned(decodedText) {
   playTapFeedback(false);
   setScanStatus('error', 'QR not recognised — ID: ' + personId);
   showToast('QR not recognised: ' + personId);
-  setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — hold QR close to the camera'); }, 1500);
+  setTimeout(() => { qrScanCooldown = false; setScanStatus('scanning','Ready — bring QR up to the screen'); }, 1500);
 }
 
 async function scanQR(id) {
@@ -2073,7 +2075,7 @@ function openQRModal(id, name, sub) {
 
   new QRCode(tempDiv, {
     text: qrPayload,
-    width: 240, height: 240,
+    width: 160, height: 160,
     colorDark: '#000000',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
@@ -2097,11 +2099,11 @@ function openQRModal(id, name, sub) {
         // Some browsers generate an img — use it directly
         const img = document.createElement('img');
         img.src = generatedImg.src;
-        img.style.cssText = 'width:240px;height:240px;border-radius:8px;display:block';
+        img.style.cssText = 'width:160px;height:160px;border-radius:8px;display:block';
         img.onload = () => {
           // Also copy to canvas for download
-          canvas.width = 240; canvas.height = 240;
-          canvas.getContext('2d').drawImage(img, 0, 0, 240, 240);
+          canvas.width = 160; canvas.height = 160;
+          canvas.getContext('2d').drawImage(img, 0, 0, 160, 160);
         };
         qrWrap.innerHTML = '';
         qrWrap.appendChild(img);
@@ -2128,6 +2130,54 @@ function downloadQRCode() {
   link.download = `SOL1_QR_${qrGenCurrentId}_${(qrGenCurrentName||'').replace(/\s+/g,'_')}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
+}
+
+// ═══════════════════════════════════════════
+// PRINT ID CARD — church logo + SOL logo + QR, sized in real
+// inches (see .id-card in styles.css) so it prints true-to-size
+// regardless of printer/browser scaling settings.
+// ═══════════════════════════════════════════
+function printIDCard() {
+  if (!qrGenCurrentPayload) { showToast('⚠️ Generate a QR first'); return; }
+
+  document.getElementById('print-card-name').textContent = qrGenCurrentName || '';
+  const subSource = document.getElementById('qrgen-modal-id');
+  document.getElementById('print-card-sub').textContent = subSource ? subSource.textContent : '';
+
+  // Render a fresh, high-res QR just for print (independent of the on-screen
+  // 160px preview) so it stays crisp at 2in physical size on paper.
+  const qrWrap = document.getElementById('print-card-qr-wrap');
+  qrWrap.innerHTML = '';
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.visibility = 'hidden';
+  document.body.appendChild(tempDiv);
+
+  new QRCode(tempDiv, {
+    text: qrGenCurrentPayload,
+    width: 500, height: 500,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  setTimeout(() => {
+    const generatedCanvas = tempDiv.querySelector('canvas');
+    const generatedImg    = tempDiv.querySelector('img');
+    if (generatedCanvas) {
+      const img = document.createElement('img');
+      img.src = generatedCanvas.toDataURL('image/png');
+      qrWrap.appendChild(img);
+    } else if (generatedImg) {
+      const img = document.createElement('img');
+      img.src = generatedImg.src;
+      qrWrap.appendChild(img);
+    }
+    document.body.removeChild(tempDiv);
+
+    // Give the browser a beat to paint the image before opening the print dialog
+    setTimeout(() => window.print(), 150);
+  }, 200);
 }
 
 // Stop camera / NFC tap when navigating away
