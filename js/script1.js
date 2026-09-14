@@ -609,7 +609,7 @@ function renderFStudents() {
   }
 
   const statusColors = {
-    present: { bg: '#e8f5ee', color: '#2d6a4f', label: 'Present' },
+    present: { bg: '#e8f5ee', color: '#e64980', label: 'Present' },
     late:    { bg: '#fff5e0', color: '#c9960c', label: 'Late'    },
     absent:  { bg: '#fdecea', color: '#e53935', label: 'Absent'  },
     none:    { bg: '#eceef1', color: '#6b7280', label: 'Not yet recorded' },
@@ -682,15 +682,15 @@ function renderFDevotional() {
           <div style="font-weight:600;font-size:14px">${s["Full Name"]}</div>
           <div style="display:flex;gap:12px;margin-top:4px">
             <div style="flex:1">
-              <div style="font-size:10px;color:#2d6a4f;font-weight:600;margin-bottom:2px">📖 Devotionals ${devotDone}/${TOTAL_DEVOTIONAL_DAYS}</div>
+              <div style="font-size:10px;color:#e64980;font-weight:600;margin-bottom:2px">📖 Devotionals ${devotDone}/${TOTAL_DEVOTIONAL_DAYS}</div>
               <div style="height:4px;background:#e0e0e0;border-radius:4px;overflow:hidden">
-                <div style="height:100%;width:${devotPct}%;background:${devotPct >= 80 ? '#2d6a4f' : devotPct >= 50 ? '#c9960c' : '#e53935'};border-radius:4px;transition:width 0.3s"></div>
+                <div style="height:100%;width:${devotPct}%;background:${devotPct >= 80 ? '#e64980' : devotPct >= 50 ? '#c9960c' : '#e53935'};border-radius:4px;transition:width 0.3s"></div>
               </div>
             </div>
             <div style="flex:1">
-              <div style="font-size:10px;color:#7c3aed;font-weight:600;margin-bottom:2px">⚡ Activities ${activDone}/${TOTAL_DEVOTIONAL_DAYS}</div>
+              <div style="font-size:10px;color:#ae3ec9;font-weight:600;margin-bottom:2px">⚡ Activities ${activDone}/${TOTAL_DEVOTIONAL_DAYS}</div>
               <div style="height:4px;background:#e0e0e0;border-radius:4px;overflow:hidden">
-                <div style="height:100%;width:${activPct}%;background:${activPct >= 80 ? '#7c3aed' : activPct >= 50 ? '#c9960c' : '#e53935'};border-radius:4px;transition:width 0.3s"></div>
+                <div style="height:100%;width:${activPct}%;background:${activPct >= 80 ? '#ae3ec9' : activPct >= 50 ? '#c9960c' : '#e53935'};border-radius:4px;transition:width 0.3s"></div>
               </div>
             </div>
           </div>
@@ -723,20 +723,20 @@ function switchDevotTab(tab) {
   if (!devotTab || !activTab || !devotPanel || !activPanel) return;
 
   if (tab === 'devot') {
-    devotTab.style.background = '#2d6a4f';
+    devotTab.style.background = '#e64980';
     devotTab.style.color = '#fff';
-    devotTab.style.borderColor = '#2d6a4f';
+    devotTab.style.borderColor = '#e64980';
     activTab.style.background = '#fff';
-    activTab.style.color = '#7c3aed';
+    activTab.style.color = '#ae3ec9';
     activTab.style.borderColor = '#e8e8e8';
     devotPanel.style.display = '';
     activPanel.style.display = 'none';
   } else {
-    activTab.style.background = '#7c3aed';
+    activTab.style.background = '#ae3ec9';
     activTab.style.color = '#fff';
-    activTab.style.borderColor = '#7c3aed';
+    activTab.style.borderColor = '#ae3ec9';
     devotTab.style.background = '#fff';
-    devotTab.style.color = '#2d6a4f';
+    devotTab.style.color = '#e64980';
     devotTab.style.borderColor = '#e8e8e8';
     devotPanel.style.display = 'none';
     activPanel.style.display = '';
@@ -766,23 +766,23 @@ function renderDevotActChecklist(studentId) {
     const aChecked = activDone.has(day);
 
     devotHtml += `
-      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${dChecked ? '#e8f5ee' : '#fafafa'};margin-bottom:6px;cursor:pointer;border:1.5px solid ${dChecked ? '#2d6a4f' : '#e8e8e8'};transition:all 0.2s">
-        <input type="checkbox" ${dChecked ? 'checked' : ''} onchange="toggleDevot('${studentId}', ${day}, this.checked)" style="width:18px;height:18px;accent-color:#2d6a4f;cursor:pointer">
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${dChecked ? '#e8f5ee' : '#fafafa'};margin-bottom:6px;cursor:pointer;border:1.5px solid ${dChecked ? '#e64980' : '#e8e8e8'};transition:all 0.2s">
+        <input type="checkbox" ${dChecked ? 'checked' : ''} onchange="toggleDevot('${studentId}', ${day}, this.checked)" style="width:18px;height:18px;accent-color:#e64980;cursor:pointer">
         <div style="flex:1">
           <span style="font-weight:600;font-size:13px">Day ${day}</span>
           <span style="color:var(--text3);font-size:11px;margin-left:8px">Wk ${week} · ${dayName}</span>
         </div>
-        ${dChecked ? '<span data-tick="1" style="color:#2d6a4f;font-size:13px;font-weight:700">✓</span>' : ''}
+        ${dChecked ? '<span data-tick="1" style="color:#e64980;font-size:13px;font-weight:700">✓</span>' : ''}
       </label>`;
 
     activHtml += `
-      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${aChecked ? '#f0ebff' : '#fafafa'};margin-bottom:6px;cursor:pointer;border:1.5px solid ${aChecked ? '#7c3aed' : '#e8e8e8'};transition:all 0.2s">
-        <input type="checkbox" ${aChecked ? 'checked' : ''} onchange="toggleActiv('${studentId}', ${day}, this.checked)" style="width:18px;height:18px;accent-color:#7c3aed;cursor:pointer">
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${aChecked ? '#f8e8fb' : '#fafafa'};margin-bottom:6px;cursor:pointer;border:1.5px solid ${aChecked ? '#ae3ec9' : '#e8e8e8'};transition:all 0.2s">
+        <input type="checkbox" ${aChecked ? 'checked' : ''} onchange="toggleActiv('${studentId}', ${day}, this.checked)" style="width:18px;height:18px;accent-color:#ae3ec9;cursor:pointer">
         <div style="flex:1">
           <span style="font-weight:600;font-size:13px">Day ${day}</span>
           <span style="color:var(--text3);font-size:11px;margin-left:8px">Wk ${week} · ${dayName}</span>
         </div>
-        ${aChecked ? '<span data-tick="1" style="color:#7c3aed;font-size:13px;font-weight:700">✓</span>' : ''}
+        ${aChecked ? '<span data-tick="1" style="color:#ae3ec9;font-size:13px;font-weight:700">✓</span>' : ''}
       </label>`;
   }
 
@@ -792,11 +792,11 @@ function renderDevotActChecklist(studentId) {
     <!-- TAB SWITCHER -->
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button id="devot-tab-btn" onclick="switchDevotTab('devot')"
-        style="flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${devotIsActive ? '#2d6a4f' : '#e8e8e8'};background:${devotIsActive ? '#2d6a4f' : '#fff'};color:${devotIsActive ? '#fff' : '#2d6a4f'};transition:all 0.2s">
+        style="flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${devotIsActive ? '#e64980' : '#e8e8e8'};background:${devotIsActive ? '#e64980' : '#fff'};color:${devotIsActive ? '#fff' : '#e64980'};transition:all 0.2s">
         📖 Devotionals<br><span style="font-size:11px;opacity:0.85">${devotCount}/${TOTAL_DEVOTIONAL_DAYS} done</span>
       </button>
       <button id="activ-tab-btn" onclick="switchDevotTab('activ')"
-        style="flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${!devotIsActive ? '#7c3aed' : '#e8e8e8'};background:${!devotIsActive ? '#7c3aed' : '#fff'};color:${!devotIsActive ? '#fff' : '#7c3aed'};transition:all 0.2s">
+        style="flex:1;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${!devotIsActive ? '#ae3ec9' : '#e8e8e8'};background:${!devotIsActive ? '#ae3ec9' : '#fff'};color:${!devotIsActive ? '#fff' : '#ae3ec9'};transition:all 0.2s">
         ⚡ Activities<br><span style="font-size:11px;opacity:0.85">${activCount}/${TOTAL_DEVOTIONAL_DAYS} done</span>
       </button>
     </div>
@@ -804,7 +804,7 @@ function renderDevotActChecklist(studentId) {
     <!-- DEVOTIONALS PANEL -->
     <div id="devot-tab-panel" style="display:${devotIsActive ? '' : 'none'}">
       <div style="height:6px;background:#e0e0e0;border-radius:6px;margin-bottom:10px;overflow:hidden">
-        <div style="height:100%;width:${Math.round(devotCount/TOTAL_DEVOTIONAL_DAYS*100)}%;background:#2d6a4f;border-radius:6px;transition:width 0.3s"></div>
+        <div style="height:100%;width:${Math.round(devotCount/TOTAL_DEVOTIONAL_DAYS*100)}%;background:#e64980;border-radius:6px;transition:width 0.3s"></div>
       </div>
       <div id="devot-day-list">${devotHtml}</div>
     </div>
@@ -812,7 +812,7 @@ function renderDevotActChecklist(studentId) {
     <!-- ACTIVITIES PANEL -->
     <div id="activ-tab-panel" style="display:${!devotIsActive ? '' : 'none'}">
       <div style="height:6px;background:#e0e0e0;border-radius:6px;margin-bottom:10px;overflow:hidden">
-        <div style="height:100%;width:${Math.round(activCount/TOTAL_DEVOTIONAL_DAYS*100)}%;background:#7c3aed;border-radius:6px;transition:width 0.3s"></div>
+        <div style="height:100%;width:${Math.round(activCount/TOTAL_DEVOTIONAL_DAYS*100)}%;background:#ae3ec9;border-radius:6px;transition:width 0.3s"></div>
       </div>
       <div id="activ-day-list">${activHtml}</div>
     </div>`;
@@ -831,9 +831,9 @@ function toggleDevot(studentId, day, checked) {
     const d = idx + 1;
     const ok = (APP.devotionals[studentId] || new Set()).has(d);
     lbl.style.background = ok ? '#e8f5ee' : '#fafafa';
-    lbl.style.borderColor = ok ? '#2d6a4f' : '#e8e8e8';
+    lbl.style.borderColor = ok ? '#e64980' : '#e8e8e8';
     const tick = lbl.querySelector('[data-tick]');
-    if (ok && !tick) { const s = document.createElement('span'); s.dataset.tick='1'; s.style.cssText='color:#2d6a4f;font-size:13px;font-weight:700'; s.textContent='✓'; lbl.appendChild(s); }
+    if (ok && !tick) { const s = document.createElement('span'); s.dataset.tick='1'; s.style.cssText='color:#e64980;font-size:13px;font-weight:700'; s.textContent='✓'; lbl.appendChild(s); }
     else if (!ok && tick) tick.remove();
   });
   const bar = document.querySelector('#devot-tab-panel > div > div');
@@ -855,10 +855,10 @@ function toggleActiv(studentId, day, checked) {
   labels.forEach((lbl, idx) => {
     const d = idx + 1;
     const ok = (APP.activities[studentId] || new Set()).has(d);
-    lbl.style.background = ok ? '#f0ebff' : '#fafafa';
-    lbl.style.borderColor = ok ? '#7c3aed' : '#e8e8e8';
+    lbl.style.background = ok ? '#f8e8fb' : '#fafafa';
+    lbl.style.borderColor = ok ? '#ae3ec9' : '#e8e8e8';
     const tick = lbl.querySelector('[data-tick]');
-    if (ok && !tick) { const s = document.createElement('span'); s.dataset.tick='1'; s.style.cssText='color:#7c3aed;font-size:13px;font-weight:700'; s.textContent='✓'; lbl.appendChild(s); }
+    if (ok && !tick) { const s = document.createElement('span'); s.dataset.tick='1'; s.style.cssText='color:#ae3ec9;font-size:13px;font-weight:700'; s.textContent='✓'; lbl.appendChild(s); }
     else if (!ok && tick) tick.remove();
   });
   // Update progress bar
@@ -884,7 +884,7 @@ function renderADevotionalTables() {
     const activPct = maxPossible > 0 ? Math.round((totalActiv / maxPossible) * 100) : 0;
     return `
       <button class="menu-item" onclick="openADevotTable('${tno}')" style="margin-bottom:8px">
-        <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#2d6a4f" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></div>
+        <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#e64980" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></div>
         <div class="mi-text">
           <div class="mi-title">${getTableLabel(tno)} — ${totalS} students</div>
           <div class="mi-sub">📖 ${devotPct}% devotionals · ⚡ ${activPct}% activities</div>
@@ -922,15 +922,15 @@ function renderADevotTableStudents(tableNo) {
         </div>
         <div style="display:flex;gap:12px;width:100%;padding-left:36px">
           <div style="flex:1">
-            <div style="font-size:10px;color:#2d6a4f;font-weight:600;margin-bottom:3px">📖 Devotionals ${devotDone}/${TOTAL_DEVOTIONAL_DAYS} (${devotPct}%)</div>
+            <div style="font-size:10px;color:#e64980;font-weight:600;margin-bottom:3px">📖 Devotionals ${devotDone}/${TOTAL_DEVOTIONAL_DAYS} (${devotPct}%)</div>
             <div style="height:5px;background:#e0e0e0;border-radius:5px;overflow:hidden">
-              <div style="height:100%;width:${devotPct}%;background:#2d6a4f;border-radius:5px"></div>
+              <div style="height:100%;width:${devotPct}%;background:#e64980;border-radius:5px"></div>
             </div>
           </div>
           <div style="flex:1">
-            <div style="font-size:10px;color:#7c3aed;font-weight:600;margin-bottom:3px">⚡ Activities ${activDone}/${TOTAL_DEVOTIONAL_DAYS} (${activPct}%)</div>
+            <div style="font-size:10px;color:#ae3ec9;font-weight:600;margin-bottom:3px">⚡ Activities ${activDone}/${TOTAL_DEVOTIONAL_DAYS} (${activPct}%)</div>
             <div style="height:5px;background:#e0e0e0;border-radius:5px;overflow:hidden">
-              <div style="height:100%;width:${activPct}%;background:#7c3aed;border-radius:5px"></div>
+              <div style="height:100%;width:${activPct}%;background:#ae3ec9;border-radius:5px"></div>
             </div>
           </div>
         </div>
@@ -1476,7 +1476,7 @@ function setScanStatus(state, msg) {
   // state: 'idle' | 'scanning' | 'success' | 'error'
   const bar = document.getElementById('qr-status-bar');
   if (!bar) return;
-  const colors = { idle:'#6b7280', scanning:'#7c3aed', success:'#2d6a4f', error:'#e53935' };
+  const colors = { idle:'#6b7280', scanning:'#ae3ec9', success:'#e64980', error:'#e53935' };
   const icons  = { idle:'📷', scanning:'🔍', success:'✅', error:'⚠️' };
   bar.style.display = msg ? '' : 'none';
   bar.style.background = colors[state] || colors.idle;
@@ -1677,7 +1677,7 @@ async function scanQR(id) {
 
   // ── Normal result display ──────────────────────────────────────────────
   const alertMsg = getAttendanceAlertMessage(status);
-  const statusColors = { Present: { bg:'#e8f5ee', border:'#2d6a4f', icon:'✅' }, Late: { bg:'#fff5e0', border:'#c9960c', icon:'⏰' }, Absent: { bg:'#fdecea', border:'#e53935', icon:'❌' } };
+  const statusColors = { Present: { bg:'#e8f5ee', border:'#e64980', icon:'✅' }, Late: { bg:'#fff5e0', border:'#c9960c', icon:'⏰' }, Absent: { bg:'#fdecea', border:'#e53935', icon:'❌' } };
   const sc = statusColors[status] || statusColors['Present'];
 
   setScanStatus(status === 'Present' ? 'success' : (status === 'Late' ? 'scanning' : 'error'), student['Full Name'] + ' — ' + status + ' ✓');
@@ -1722,11 +1722,11 @@ async function scanFacultyQR(id) {
   setScanStatus('success', faculty['Full Name'] + ' (' + (faculty['Role']||'') + ') marked PRESENT ✓');
   const resultEl = document.getElementById('qr-result');
   if (resultEl) resultEl.innerHTML = `
-    <div style="background:#e8f5ee;padding:14px 16px;border-radius:12px;border-left:4px solid #2d6a4f;margin-top:8px;display:flex;gap:10px;align-items:center">
+    <div style="background:#e8f5ee;padding:14px 16px;border-radius:12px;border-left:4px solid #e64980;margin-top:8px;display:flex;gap:10px;align-items:center">
       <span style="font-size:28px">✅</span>
       <div>
         <div style="font-weight:700;font-size:15px;color:#1a3a2a">${faculty['Full Name']}</div>
-        <div style="font-size:12px;color:#2d6a4f"><strong>${faculty['Role']||'Faculty'}</strong> marked PRESENT — Week ${APP.currentWeek}</div>
+        <div style="font-size:12px;color:#e64980"><strong>${faculty['Role']||'Faculty'}</strong> marked PRESENT — Week ${APP.currentWeek}</div>
         <div style="font-size:11px;color:#666;margin-top:2px">${new Date().toLocaleTimeString()}</div>
       </div>
     </div>`;
@@ -2343,7 +2343,7 @@ function renderMakeup() {
   const statusColors = {
     'Pending':   { bg: '#fdecea', color: '#e53935' },
     'Scheduled': { bg: '#fff5e0', color: '#c9960c' },
-    'Done':      { bg: '#e8f5ee', color: '#2d6a4f' }
+    'Done':      { bg: '#e8f5ee', color: '#e64980' }
   };
 
   el.innerHTML = absences.map(a => {
@@ -2392,7 +2392,7 @@ function renderRecordStats() {
   el.innerHTML = `
     <div class="stat-card"><div class="stat-val">${activeStudents.length}</div><div class="stat-label">Total Students</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--green)">${totalPaid}</div><div class="stat-label">Fully Paid</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#6b2d5e">₱${totalPaymentsAmount.toLocaleString()}</div><div class="stat-label">Total Collected</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#ae3ec9">₱${totalPaymentsAmount.toLocaleString()}</div><div class="stat-label">Total Collected</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${totalUnpaid > 0 ? '#e53935' : 'var(--green)'}">${totalUnpaid}</div><div class="stat-label">Unpaid</div></div>
   `;
 }
@@ -2483,7 +2483,7 @@ function renderBalancesSummary() {
     <div class="stat-card"><div class="stat-val" style="color:#e8a020">${partial}</div><div class="stat-label">Partial</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--red,#e53935)">${unpaid}</div><div class="stat-label">Unpaid</div></div>
     <div class="stat-card" style="grid-column:1/-1;background:linear-gradient(135deg,#f3e8ff,#ede0f8)">
-      <div class="stat-val" style="color:#6b2d5e">₱${totalCollected.toLocaleString()}</div>
+      <div class="stat-val" style="color:#ae3ec9">₱${totalCollected.toLocaleString()}</div>
       <div class="stat-label">Total Collected of ₱${totalExpected.toLocaleString()} expected</div>
     </div>
   `;
