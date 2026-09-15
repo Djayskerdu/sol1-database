@@ -2077,7 +2077,7 @@ function downloadQRCode() {
 function openTableAddCredit() {
   const modal = document.getElementById('modal-table-credit');
   if (!modal) return;
-  const tableNo    = document.getElementById('a-td-title')?.textContent?.replace('Table ','').trim();
+  const tableNo    = APP._currentTableDetail;
   const modalTitle = document.getElementById('modal-table-credit-title');
   if (modalTitle) modalTitle.textContent = `Add SOL Credits — ${getTableLabel(tableNo)}`;
   modal.style.display = 'flex';
@@ -2099,7 +2099,7 @@ function closeTableCreditModal() {
 }
 
 async function doTableAddCredit() {
-  const tableNo = document.getElementById('a-td-title')?.textContent?.replace('Table ','').trim();
+  const tableNo = APP._currentTableDetail;
   const amount  = Number(document.getElementById('modal-credit-amount')?.value || 5);
   const rawReason = APP.selectedReason || 'Attendance';
   const reason  = rawReason === '__other__'
