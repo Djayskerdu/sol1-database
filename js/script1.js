@@ -2846,7 +2846,7 @@ function showLedFrame(el, text) {
       const textWidth = el.scrollWidth;
       if (textWidth > trackWidth - 4) {
         const distance = trackWidth + textWidth;
-        const PX_PER_SEC = 80;
+        const PX_PER_SEC = 140; // medium-fast ticker speed
         el.style.setProperty('--marquee-start', `${trackWidth}px`);
         el.style.setProperty('--marquee-end', `${-textWidth}px`);
         el.style.setProperty('--marquee-duration', `${Math.max(4, distance / PX_PER_SEC)}s`);

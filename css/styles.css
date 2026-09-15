@@ -793,7 +793,7 @@ input, select, button, textarea { font-family: var(--font); }
   text-shadow:
     0 0 4px rgba(255,212,0,1), 0 0 10px rgba(255,180,0,0.9),
     0 0 22px rgba(255,140,0,0.7), 0 0 48px rgba(255,100,0,0.4),
-    0 0 140px rgba(255,80,0,0.2) !important;
+    0 0 80px rgba(255,80,0,0.2) !important;
   filter: contrast(1.1);
   position: relative; z-index: 5;
 }
