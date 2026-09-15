@@ -2924,12 +2924,23 @@ function renderLedBanner() {
 
   const increased = LED_LAST_TOTAL !== null && total > LED_LAST_TOTAL && config.flashOnIncrease !== false;
   if (increased) {
+    const gained = total - LED_LAST_TOTAL;
     if (screen) {
       screen.classList.add('led-flash');
       setTimeout(() => screen.classList.remove('led-flash'), 1700);
     }
+    // Show the actual points gained directly on the board itself — a
+    // toast alone isn't reliable here since this screen is rotated into
+    // forced landscape and the toast isn't part of that rotated layout.
+    const gainBadge = document.getElementById('led-gain-badge');
+    if (gainBadge) {
+      gainBadge.textContent = `+${gained} SOL`;
+      gainBadge.classList.remove('led-gain-pop');
+      void gainBadge.offsetWidth; // force reflow so the animation restarts cleanly
+      gainBadge.classList.add('led-gain-pop');
+    }
     if (navigator.vibrate) navigator.vibrate([70, 60, 70]);
-    showToast(`🎉 +${total - LED_LAST_TOTAL} SOL for ${getTableLabel(tableNo).toUpperCase()}!`);
+    showToast(`🎉 +${gained} SOL for ${getTableLabel(tableNo).toUpperCase()}!`);
   }
   LED_LAST_TOTAL = total;
 }
