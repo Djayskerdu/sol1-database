@@ -2823,37 +2823,48 @@ function showLedFrame(el, text) {
     el.classList.remove('led-chunk-split', 'led-chunk-score');
   }
 
-  // Reset any marquee-scroll state from a previous (longer) frame before
-  // measuring — otherwise leftover absolute positioning throws off the
-  // overflow check below.
-  el.classList.remove('led-text-in', 'led-marquee-scroll');
-  el.style.removeProperty('--marquee-start');
-  el.style.removeProperty('--marquee-end');
-  el.style.removeProperty('--marquee-duration');
+  el.classList.remove('led-text-in');
   void el.offsetWidth; // force reflow so the animation restarts cleanly
   el.classList.add('led-text-in');
 
-  // Plain single-line frames (team names, custom messages) were being
-  // silently clipped on both edges when they didn't fit the screen width —
-  // e.g. "SEE YOU SOON, SOL-1 STUDENTS! <3 <3 <3" rendering as
-  // "YOU SOON, SOL-1 STUDENTS! <3 <3" because centered + nowrap + the
-  // container's overflow:hidden just ate whatever didn't fit. Detect that
-  // case and scroll the text across like a real LED ticker instead.
-  if (scoreParts.length !== 2 && parts.length !== 2) {
-    const track = el.closest('.led-marquee-track') || el.parentElement;
-    if (track) {
-      const trackWidth = track.clientWidth;
-      const textWidth = el.scrollWidth;
-      if (textWidth > trackWidth - 4) {
-        const distance = trackWidth + textWidth;
-        const PX_PER_SEC = 140; // medium-fast ticker speed
-        el.style.setProperty('--marquee-start', `${trackWidth}px`);
-        el.style.setProperty('--marquee-end', `${-textWidth}px`);
-        el.style.setProperty('--marquee-duration', `${Math.max(4, distance / PX_PER_SEC)}s`);
-        el.classList.add('led-marquee-scroll');
-      }
+  // Any of the three layouts above (plain line, score num/label, or the
+  // two split lines) can still be wider than the screen for a long custom
+  // message or a big point total — instead of clipping the edges, shrink
+  // the font just enough for it to fit whole. A scrolling marquee was
+  // tried here first, but the frame-rotation timer (config.frameSeconds)
+  // advances to the next screen on its own schedule and was cutting the
+  // scroll off mid-pass before a long message finished — shrink-to-fit
+  // guarantees the whole line is always visible immediately.
+  const track = el.closest('.led-marquee-track') || el.parentElement;
+  if (track) {
+    const trackStyle = getComputedStyle(track);
+    const maxWidth = track.clientWidth
+      - (parseFloat(trackStyle.paddingLeft) || 0)
+      - (parseFloat(trackStyle.paddingRight) || 0);
+    if (scoreParts.length === 2) {
+      fitLedTextWidth(el.querySelector('.led-score-num'), maxWidth);
+      fitLedTextWidth(el.querySelector('.led-score-label'), maxWidth);
+    } else if (parts.length === 2) {
+      fitLedTextWidth(el.querySelector('.led-line'), maxWidth);
+      fitLedTextWidth(el.querySelector('.led-line-2'), maxWidth);
+    } else {
+      fitLedTextWidth(el, maxWidth);
     }
   }
+}
+
+// Shrinks an element's font-size (in place, via inline style) just enough
+// that its text fits within maxWidth instead of overflowing and getting
+// clipped by the LED screen's overflow:hidden. No-ops if it already fits.
+function fitLedTextWidth(el, maxWidth) {
+  if (!el || !maxWidth) return;
+  el.style.fontSize = ''; // start from the CSS clamp() default each time
+  const naturalWidth = el.scrollWidth;
+  if (naturalWidth <= maxWidth) return;
+  const baseSize = parseFloat(getComputedStyle(el).fontSize) || 16;
+  const MIN_FONT_PX = 12; // floor so it never shrinks to unreadable
+  const newSize = Math.max(MIN_FONT_PX, baseSize * (maxWidth / naturalWidth) * 0.97);
+  el.style.fontSize = `${newSize}px`;
 }
 
 // Swaps in the yellow/green/red/blue/white glow — shared by the faculty

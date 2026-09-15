@@ -631,7 +631,7 @@ input, select, button, textarea { font-family: var(--font); }
 }
 .led-marquee-track {
   display: flex; width: 100%; justify-content: center; align-items: center;
-  padding: 0 24px; position: relative;
+  padding: 0 24px;
 }
 /* Only the first chunk is ever shown now — the second span is kept in the
    markup for backward compatibility but stays hidden so there's no
@@ -653,21 +653,9 @@ input, select, button, textarea { font-family: var(--font); }
   60%  { opacity: 1; transform: translateY(-3px) scale(1.02); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-/* Long single-line frames (team names, custom messages) that don't fit the
-   screen width scroll across instead of being clipped at both edges —
-   distance/duration are set inline by showLedFrame() once it measures the
-   actual text and track widths. */
-.led-chunk.led-marquee-scroll {
-  position: absolute; top: 50%; left: 0; text-align: left;
-  animation-name: ledMarqueeScroll;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-duration: var(--marquee-duration, 10s);
-}
-@keyframes ledMarqueeScroll {
-  0%   { transform: translate(var(--marquee-start, 100%), -50%); }
-  100% { transform: translate(var(--marquee-end, -100%), -50%); }
-}
+/* Long single-line frames (team names, custom messages, big point totals)
+   that don't fit the screen width get their font-size shrunk inline by
+   fitLedTextWidth() in script1.js instead of being clipped at both edges. */
 /* "TEAM NAME | TABLE X" frames — stacked as two centered lines so long
    team names don't run off the edges of a phone screen in landscape. */
 .led-chunk.led-chunk-split {
