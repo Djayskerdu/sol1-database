@@ -2823,9 +2823,37 @@ function showLedFrame(el, text) {
     el.classList.remove('led-chunk-split', 'led-chunk-score');
   }
 
-  el.classList.remove('led-text-in');
+  // Reset any marquee-scroll state from a previous (longer) frame before
+  // measuring — otherwise leftover absolute positioning throws off the
+  // overflow check below.
+  el.classList.remove('led-text-in', 'led-marquee-scroll');
+  el.style.removeProperty('--marquee-start');
+  el.style.removeProperty('--marquee-end');
+  el.style.removeProperty('--marquee-duration');
   void el.offsetWidth; // force reflow so the animation restarts cleanly
   el.classList.add('led-text-in');
+
+  // Plain single-line frames (team names, custom messages) were being
+  // silently clipped on both edges when they didn't fit the screen width —
+  // e.g. "SEE YOU SOON, SOL-1 STUDENTS! <3 <3 <3" rendering as
+  // "YOU SOON, SOL-1 STUDENTS! <3 <3" because centered + nowrap + the
+  // container's overflow:hidden just ate whatever didn't fit. Detect that
+  // case and scroll the text across like a real LED ticker instead.
+  if (scoreParts.length !== 2 && parts.length !== 2) {
+    const track = el.closest('.led-marquee-track') || el.parentElement;
+    if (track) {
+      const trackWidth = track.clientWidth;
+      const textWidth = el.scrollWidth;
+      if (textWidth > trackWidth - 4) {
+        const distance = trackWidth + textWidth;
+        const PX_PER_SEC = 80;
+        el.style.setProperty('--marquee-start', `${trackWidth}px`);
+        el.style.setProperty('--marquee-end', `${-textWidth}px`);
+        el.style.setProperty('--marquee-duration', `${Math.max(4, distance / PX_PER_SEC)}s`);
+        el.classList.add('led-marquee-scroll');
+      }
+    }
+  }
 }
 
 // Swaps in the yellow/green/red/blue/white glow — shared by the faculty
