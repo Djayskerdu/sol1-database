@@ -241,7 +241,6 @@ async function saveMakeupStatus(attendanceId, status, studentId, studentName, we
 document.addEventListener('DOMContentLoaded', () => {
   loadAllData();
   initClock();
-  updateSyncStatus(false);
 });
 
 // ═══════════════════════════════════════════
@@ -255,40 +254,37 @@ function safeData(settled) {
   return settled.value?.data || [];
 }
 
-async function loadAllData() {
-  updateSyncStatus(false);
+// ─── LOCAL CACHE OF THE LAST GOOD DATA BUNDLE ─────────────────────────
+// Apps Script's own open-the-spreadsheet step is the slow part of every
+// sync (often several seconds) and nothing on the frontend can speed
+// that up. What we CAN fix is the blank/loading screen while it's
+// happening: cache the last successful bundle and render it instantly
+// on load, then swap in fresh data once the network call finishes.
+const DATA_CACHE_KEY = 'sol1_data_cache_v1';
 
-  // Single batched call — the backend opens the spreadsheet ONCE and reads
-  // every sheet in that one execution, instead of the old approach of 13
-  // separate HTTP calls each re-opening the spreadsheet from scratch.
-  // Falls back to the old per-sheet calls automatically if the deployed
-  // backend doesn't have the "allData" action yet (e.g. not redeployed).
-  let bundle;
-  let usedFallback = false;
-  let missingSheets = [];
+function loadCachedBundle() {
   try {
-    const res = await apiGet('allData');
-    if (!res || res.success === false || !res.data) throw new Error('allData not available');
-    bundle = res.data;
-    missingSheets = res.missingSheets || [];
-  } catch (err) {
-    usedFallback = true;
-    const results = await Promise.allSettled([
-      apiGet('students'), apiGet('faculty'), apiGet('credits'), apiGet('payments'),
-      apiGet('studentAttendance'), apiGet('facultyAttendance'), apiGet('lessonWeeks'),
-      apiGet('qrscans'), apiGet('tableGuides'), apiGet('settings'),
-      apiGet('devotionals'), apiGet('activities'), apiGet('makeupStatus')
-    ]);
-    bundle = {
-      students: safeData(results[0]), faculty: safeData(results[1]), credits: safeData(results[2]),
-      payments: safeData(results[3]), studentAttendance: safeData(results[4]), facultyAttendance: safeData(results[5]),
-      lessonWeeks: safeData(results[6]), qrscans: safeData(results[7]), tableGuides: safeData(results[8]),
-      settings: safeData(results[9]), devotionals: safeData(results[10]), activities: safeData(results[11]),
-      makeupStatus: safeData(results[12])
-    };
-    bundle._failCount = results.slice(0, 10).filter(r => r.status === 'rejected').length;
-  }
+    const raw = localStorage.getItem(DATA_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.bundle ? parsed : null;
+  } catch (e) { return null; }
+}
 
+function saveCachedBundle(bundle) {
+  try {
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ bundle, savedAt: Date.now() }));
+  } catch (e) {
+    // Quota exceeded or storage unavailable (e.g. private browsing) —
+    // caching is a nice-to-have, so fail silently rather than break sync.
+    console.warn('Could not cache data locally:', e);
+  }
+}
+
+// Pushes a data bundle into APP state and re-renders every screen that
+// depends on it. Shared by the instant cached render and the live
+// network update, so both paths behave identically.
+function applyBundle(bundle) {
   APP.students          = bundle.students          || [];
   APP.faculty            = bundle.faculty            || [];
   APP.credits             = bundle.credits             || [];
@@ -320,16 +316,71 @@ async function loadAllData() {
   renderRecordStats();
   renderBalancesSummary();
   refreshCurrentScreen();
+}
+
+async function loadAllData() {
+  // STEP 1 — render instantly from whatever we last synced successfully,
+  // so the dashboard is usable right away instead of sitting blank while
+  // Apps Script opens the spreadsheet in the background.
+  const cached = loadCachedBundle();
+  if (cached) {
+    applyBundle(cached.bundle);
+    updateSyncStatus(false, 'Showing saved data — syncing latest…', true);
+  } else {
+    updateSyncStatus(false);
+  }
+
+  // STEP 2 — fetch the live data and swap it in once it arrives.
+  // Single batched call — the backend opens the spreadsheet ONCE and reads
+  // every sheet in that one execution, instead of the old approach of 13
+  // separate HTTP calls each re-opening the spreadsheet from scratch.
+  // Falls back to the old per-sheet calls automatically if the deployed
+  // backend doesn't have the "allData" action yet (e.g. not redeployed).
+  let bundle;
+  let usedFallback = false;
+  let missingSheets = [];
+  try {
+    const res = await apiGet('allData');
+    if (!res || res.success === false || !res.data) throw new Error('allData not available');
+    bundle = res.data;
+    missingSheets = res.missingSheets || [];
+  } catch (err) {
+    usedFallback = true;
+    const results = await Promise.allSettled([
+      apiGet('students'), apiGet('faculty'), apiGet('credits'), apiGet('payments'),
+      apiGet('studentAttendance'), apiGet('facultyAttendance'), apiGet('lessonWeeks'),
+      apiGet('qrscans'), apiGet('tableGuides'), apiGet('settings'),
+      apiGet('devotionals'), apiGet('activities'), apiGet('makeupStatus')
+    ]);
+    bundle = {
+      students: safeData(results[0]), faculty: safeData(results[1]), credits: safeData(results[2]),
+      payments: safeData(results[3]), studentAttendance: safeData(results[4]), facultyAttendance: safeData(results[5]),
+      lessonWeeks: safeData(results[6]), qrscans: safeData(results[7]), tableGuides: safeData(results[8]),
+      settings: safeData(results[9]), devotionals: safeData(results[10]), activities: safeData(results[11]),
+      makeupStatus: safeData(results[12])
+    };
+    bundle._failCount = results.slice(0, 10).filter(r => r.status === 'rejected').length;
+  }
+
+  // If EVERY source failed and we already have cached data on screen,
+  // leave the cached render in place instead of wiping it with empty
+  // arrays — a dropped connection shouldn't blank out what's showing.
+  const totalFailure = usedFallback && (bundle._failCount || 0) === 10;
+  if (!(totalFailure && cached)) {
+    applyBundle(bundle);
+  }
 
   if (usedFallback) {
     const failCount = bundle._failCount || 0;
     if (failCount === 10) {
-      updateSyncStatus(false, 'Cannot reach server — check GAS_URL');
-      showConnectionError();
+      updateSyncStatus(false, cached ? 'Offline — showing saved data' : 'Cannot reach server — check GAS_URL', !!cached);
+      if (!cached) showConnectionError();
     } else if (failCount > 0) {
       updateSyncStatus(false, failCount + ' source(s) failed to load');
+      saveCachedBundle(bundle);
     } else {
       updateSyncStatus(true);
+      saveCachedBundle(bundle);
     }
   } else if (missingSheets.length) {
     // The request succeeded, but one or more tabs don't exist in the Sheet
@@ -342,6 +393,7 @@ async function loadAllData() {
     updateSyncStatus(false, 'Connected, but FACULTY_STAFF has no rows yet');
   } else {
     updateSyncStatus(true);
+    saveCachedBundle(bundle);
   }
 }
 
@@ -2249,13 +2301,18 @@ function initClock() {
   }, 1000);
 }
 
-function updateSyncStatus(ok, msg) {
+function updateSyncStatus(ok, msg, isInfo) {
   const el  = document.getElementById('sync-label-portal');
   const dot = document.getElementById('sync-dot-portal');
   if (!el) return;
   if (ok) {
     el.textContent = 'Online · Synced';
     if (dot) { dot.style.background = '#27ae60'; dot.style.boxShadow = '0 0 0 3px rgba(39,174,96,0.25)'; }
+  } else if (msg && isInfo) {
+    // Neutral progress message (e.g. "showing saved data, syncing…") —
+    // not an error, so no warning icon/color.
+    el.textContent = msg;
+    if (dot) { dot.style.background = '#5b8def'; dot.style.boxShadow = '0 0 0 3px rgba(91,141,239,0.25)'; }
   } else if (msg) {
     el.textContent = '⚠️ ' + msg;
     if (dot) { dot.style.background = '#e67e22'; dot.style.boxShadow = '0 0 0 3px rgba(230,126,34,0.25)'; }
