@@ -2689,6 +2689,8 @@ function doRecordLogin() {
 
 function logout() {
   stopLedPolling();
+  const ledOverlay = document.getElementById('s-f-led');
+  if (ledOverlay) ledOverlay.classList.remove('active');
   APP.currentFaculty = null;
   go('s-portal');
 }
@@ -2757,7 +2759,9 @@ function buildLedText(tableNo, config) {
 
 async function openLedBoard() {
   LED_LAST_TOTAL = null; // force a clean first render, no flash
-  go('s-f-led');
+  const overlay = document.getElementById('s-f-led');
+  if (overlay) overlay.classList.add('active');
+  initLedOrientationPref();
   renderLedBanner(); // immediate render with whatever's cached
   await refreshLedCredits(); // then pull the live totals + admin config
   startLedPolling();
@@ -2770,7 +2774,25 @@ async function openLedBoard() {
 function closeLedBoard() {
   stopLedPolling();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  go('s-faculty-home');
+  const overlay = document.getElementById('s-f-led');
+  if (overlay) overlay.classList.remove('active');
+}
+
+// Remembers whether the phone is mounted "flipped" in the cardboard
+// laptop, so the forced-landscape rotation goes the right way next time.
+function initLedOrientationPref() {
+  const overlay = document.getElementById('s-f-led');
+  if (!overlay) return;
+  let flipped = false;
+  try { flipped = localStorage.getItem('sol1_led_flip') === '1'; } catch (e) {}
+  overlay.classList.toggle('led-flip', flipped);
+}
+
+function toggleLedFlip() {
+  const overlay = document.getElementById('s-f-led');
+  if (!overlay) return;
+  const flipped = overlay.classList.toggle('led-flip');
+  try { localStorage.setItem('sol1_led_flip', flipped ? '1' : '0'); } catch (e) {}
 }
 
 function toggleLedFullscreen() {
