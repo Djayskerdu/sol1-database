@@ -2785,7 +2785,7 @@ let LED_LAST_TOTAL    = null;
 let LED_FRAMES         = [];
 let LED_FRAME_INDEX    = 0;
 let LED_FRAME_TIMER    = null;
-let LED_ANNOUNCE_QUEUE = []; // one-time "+X SOL ADDED" / "TOTAL NOW: Y" screens
+let LED_ANNOUNCE_QUEUE = []; // one-time "+X SOL POINTS ADDED" / "TOTAL SOL POINTS = Y" screens
 
 // Client-side fallback used before the first successful ledConfig fetch —
 // mirrors LED_CONFIG_DEFAULTS on the Apps Script side.
@@ -2802,9 +2802,13 @@ function showLedFrame(el, text) {
   if (!el || el.dataset.ledText === text) return;
   el.dataset.ledText = text;
 
-  // "N || SOL POINTS" frames render as a scoreboard: big number on top,
-  // smaller label underneath — this is what avoids the number clipping
-  // off the sides of the screen at large point totals (see buildLedFrames).
+  // "N || SOL POINTS" frames render as a scoreboard: big number, smaller
+  // label — this is what avoids the number clipping off the sides of the
+  // screen at large point totals (see buildLedFrames). Whichever side of
+  // the " || " is the actual number gets the big styling, so both
+  // "11000 || SOL POINTS ADDED" (number first) and "TOTAL SOL POINTS =
+  // || 11000" (label first) render correctly — order on screen always
+  // follows the order the caller wrote it in.
   const scoreParts = text.split(' || ');
   // "TEAM NAME | TABLE X" frames are the ones long enough to run off the
   // edges of a phone screen in forced-landscape mode (see buildLedFrames).
@@ -2812,7 +2816,12 @@ function showLedFrame(el, text) {
   // bottom — instead of clipping a single nowrap line.
   const parts = text.split(' | ');
   if (scoreParts.length === 2) {
-    el.innerHTML = `<span class="led-score-num">${escapeHtml(scoreParts[0])}</span><span class="led-score-label">${escapeHtml(scoreParts[1])}</span>`;
+    const isNumeric = s => /^[+\-]?[\d,]+$/.test(s.trim());
+    const [first, second] = scoreParts;
+    const numSpan   = `<span class="led-score-num">${escapeHtml(isNumeric(first) ? first : second)}</span>`;
+    const labelSpan = `<span class="led-score-label">${escapeHtml(isNumeric(first) ? second : first)}</span>`;
+    // Default (neither/both numeric) keeps the original num-first order.
+    el.innerHTML = isNumeric(second) && !isNumeric(first) ? labelSpan + numSpan : numSpan + labelSpan;
     el.classList.add('led-chunk-split', 'led-chunk-score');
   } else if (parts.length === 2) {
     el.innerHTML = `<span class="led-line">${escapeHtml(parts[0])}</span><span class="led-line led-line-2">${escapeHtml(parts[1])}</span>`;
@@ -3025,7 +3034,10 @@ function renderLedBanner() {
     const gained = total - LED_LAST_TOTAL;
     // Queue two one-time announcement screens ahead of the normal
     // rotation: what just happened, then the new running total.
-    LED_ANNOUNCE_QUEUE.push(`+${gained} SOL CREDITS ADDED`, `TOTAL NOW: ${total} SOL POINTS`);
+    // Scoreboard-style split (" || ") so each screen renders as a big
+    // number + a smaller label, centered — gained amount on top for the
+    // first screen, running total on the bottom for the second.
+    LED_ANNOUNCE_QUEUE.push(`+${gained} || SOL POINTS ADDED`, `TOTAL SOL POINTS = || ${total}`);
 
     if (screen) {
       screen.classList.add('led-flash');
@@ -3066,7 +3078,7 @@ function tickLedFrame() {
   showLedFrame(chunk1, text);
 
   const config = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
-  const seconds = LED_ANNOUNCE_QUEUE.length || text.startsWith('+') || text.startsWith('TOTAL NOW')
+  const seconds = LED_ANNOUNCE_QUEUE.length || text.startsWith('+') || text.startsWith('TOTAL SOL POINTS')
     ? 3
     : (Number(config.frameSeconds) || 5);
   LED_FRAME_TIMER = setTimeout(tickLedFrame, seconds * 1000);
