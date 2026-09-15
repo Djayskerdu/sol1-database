@@ -529,6 +529,8 @@ function go(id) {
   if (id === 's-r-payment')     populatePayStudentSelect();
   if (id === 's-r-balances')    { renderBalances(); renderBalancesSummary(); }
   if (id === 's-add-credit')   populateCreditStudentSelect();
+  if (id === 's-a-led-control') openLedControl();
+  if (id !== 's-a-led-control') stopLedPreviewRotation();
 }
 
 // Manually re-syncs all data from the sheet and re-renders whatever screen
@@ -2762,6 +2764,405 @@ function logout() {
   if (ledOverlay) ledOverlay.classList.remove('active');
   APP.currentFaculty = null;
   go('s-portal');
+}
+
+// ═══════════════════════════════════════════
+// FACULTY — LIVE LED SCOREBOARD
+// Shows the facilitator's table SOL points as a scrolling
+// LED-style marquee, meant to be displayed on the phone that
+// sits inside the SOL1 DIY cardboard laptop. Polls the sheet
+// on its own short interval (independent of loadAllData) so it
+// keeps updating live whenever an admin adds points to the
+// table from the Admin > Tables screen.
+// ═══════════════════════════════════════════
+let LED_POLL_INTERVAL = null;
+let LED_LAST_TOTAL    = null;
+
+// Frame-rotation state for the live board — separate from LED_POLL_INTERVAL
+// (which just re-fetches data every ~6-8s). The rotation timer runs on its
+// own config.frameSeconds cadence so Name/Points/Rank/Message each get a
+// full turn on screen instead of being crammed onto one line.
+let LED_FRAMES         = [];
+let LED_FRAME_INDEX    = 0;
+let LED_FRAME_TIMER    = null;
+let LED_ANNOUNCE_QUEUE = []; // one-time "+X SOL ADDED" / "TOTAL NOW: Y" screens
+
+// Client-side fallback used before the first successful ledConfig fetch —
+// mirrors LED_CONFIG_DEFAULTS on the Apps Script side.
+const LED_CONFIG_DEFAULTS_CLIENT = {
+  showName: true, showPoints: true, showRank: false, flashOnIncrease: true,
+  theme: 'yellow', customMessage: '', messageMode: 'append', targetTable: '',
+  frameSeconds: 5
+};
+
+// Swaps the visible text on a marquee chunk, replaying the pop-in
+// animation only when the text actually changed — shared by the live
+// board rotation and the admin preview rotation.
+function showLedFrame(el, text) {
+  if (!el || el.textContent === text) return;
+  el.textContent = text;
+  el.classList.remove('led-text-in');
+  void el.offsetWidth; // force reflow so the animation restarts cleanly
+  el.classList.add('led-text-in');
+}
+
+// Swaps in the yellow/green/red/blue/white glow — shared by the faculty
+// board and the admin live preview.
+function applyLedTheme(screenEl, theme) {
+  if (!screenEl) return;
+  ['led-theme-yellow', 'led-theme-green', 'led-theme-red', 'led-theme-blue', 'led-theme-white']
+    .forEach(c => screenEl.classList.remove(c));
+  screenEl.classList.add(`led-theme-${theme || 'yellow'}`);
+}
+
+// "🥇 1ST PLACE" etc, based on the same table-credit totals the Admin
+// Table Leaderboard uses.
+function getLedRankText(tableNo) {
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))].filter(Boolean);
+  const ranked = tableNos
+    .map(t => ({ t, total: getTableCredits(t) }))
+    .sort((a, b) => b.total - a.total);
+  const idx = ranked.findIndex(x => x.t === String(tableNo));
+  if (idx === -1) return '';
+  const medals = ['🥇 1ST PLACE', '🥈 2ND PLACE', '🥉 3RD PLACE'];
+  return medals[idx] || `#${idx + 1} PLACE`;
+}
+
+// Builds the set of screens one table's board cycles through, given the
+// current admin-pushed config — e.g. Team Name → Points → Rank → Message,
+// each held for config.frameSeconds before advancing. Shared by the
+// faculty LED board and the Admin control preview.
+function buildLedFrames(tableNo, config) {
+  const total = getTableCredits(tableNo);
+  const frames = [];
+  if (config.showName)   frames.push(getTableLabel(tableNo).toUpperCase());
+  if (config.showPoints) frames.push(`${total} SOL POINTS`);
+  if (config.showRank) {
+    const rank = getLedRankText(tableNo);
+    if (rank) frames.push(rank);
+  }
+  if (!frames.length) frames.push(getTableLabel(tableNo).toUpperCase());
+
+  const msg = (config.customMessage || '').trim();
+  const targetsThisTable = !config.targetTable || String(config.targetTable) === String(tableNo);
+  if (msg && targetsThisTable) {
+    if (config.messageMode === 'replace') return { frames: [msg], total };
+    frames.push(msg);
+  }
+  return { frames, total };
+}
+
+async function openLedBoard() {
+  LED_LAST_TOTAL = null; // force a clean first render, no flash
+  LED_FRAMES = []; LED_FRAME_INDEX = 0; LED_ANNOUNCE_QUEUE = [];
+  const overlay = document.getElementById('s-f-led');
+  if (overlay) overlay.classList.add('active');
+  initLedOrientationPref();
+  renderLedBanner(); // immediate render with whatever's cached
+  await refreshLedCredits(); // then pull the live totals + admin config
+  startLedPolling();
+  // Best-effort — most mobile browsers only allow fullscreen from a real
+  // user tap, so this quietly no-ops if the browser refuses it here.
+  const el = document.getElementById('led-screen');
+  if (el && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+}
+
+function closeLedBoard() {
+  stopLedPolling();
+  stopLedFrameRotation();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  const overlay = document.getElementById('s-f-led');
+  if (overlay) overlay.classList.remove('active');
+}
+
+// Remembers whether the phone is mounted "flipped" in the cardboard
+// laptop, so the forced-landscape rotation goes the right way next time.
+function initLedOrientationPref() {
+  const overlay = document.getElementById('s-f-led');
+  if (!overlay) return;
+  let flipped = false;
+  try { flipped = localStorage.getItem('sol1_led_flip') === '1'; } catch (e) {}
+  overlay.classList.toggle('led-flip', flipped);
+}
+
+function toggleLedFlip() {
+  const overlay = document.getElementById('s-f-led');
+  if (!overlay) return;
+  const flipped = overlay.classList.toggle('led-flip');
+  try { localStorage.setItem('sol1_led_flip', flipped ? '1' : '0'); } catch (e) {}
+}
+
+function toggleLedFullscreen() {
+  const el = document.getElementById('led-screen');
+  if (!el) return;
+  if (!document.fullscreenElement) {
+    (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {
+      showToast('⚠️ Fullscreen not supported on this device');
+    });
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function startLedPolling() {
+  stopLedPolling();
+  // 6s keeps the board feeling "live" without hammering Apps Script —
+  // this only re-fetches the CREDITS sheet, not the full data bundle.
+  // A small random jitter on each tick keeps multiple LED boards from
+  // landing on the exact same instant every cycle (which is what shows
+  // up as several simultaneous doGet calls in the Executions log).
+  const scheduleNext = () => {
+    LED_POLL_INTERVAL = setTimeout(async () => {
+      await refreshLedCredits();
+      scheduleNext();
+    }, 6000 + Math.floor(Math.random() * 2000));
+  };
+  scheduleNext();
+}
+
+function stopLedPolling() {
+  if (LED_POLL_INTERVAL) { clearTimeout(LED_POLL_INTERVAL); LED_POLL_INTERVAL = null; }
+}
+
+async function refreshLedCredits() {
+  try {
+    const [credRes, cfgRes] = await Promise.all([apiGet('credits'), apiGet('ledConfig')]);
+    if (credRes && credRes.success) APP.credits = credRes.data || [];
+    if (cfgRes && cfgRes.success && cfgRes.config) APP.ledConfig = cfgRes.config;
+    renderLedBanner();
+  } catch (err) {
+    console.error('refreshLedCredits error:', err);
+  }
+}
+
+function renderLedBanner() {
+  const tableNo = APP.currentFaculty?.["Table Assigned"] || "";
+  const config  = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
+  const teamName = getTableLabel(tableNo).toUpperCase();
+
+  const labelEl = document.getElementById('led-team-label');
+  if (labelEl) labelEl.textContent = teamName;
+
+  const screen = document.getElementById('led-screen');
+  applyLedTheme(screen, config.theme);
+
+  const { frames, total } = buildLedFrames(tableNo, config);
+  LED_FRAMES = frames;
+  if (LED_FRAME_INDEX >= LED_FRAMES.length) LED_FRAME_INDEX = 0;
+
+  const increased = LED_LAST_TOTAL !== null && total > LED_LAST_TOTAL && config.flashOnIncrease !== false;
+  if (increased) {
+    const gained = total - LED_LAST_TOTAL;
+    // Queue two one-time announcement screens ahead of the normal
+    // rotation: what just happened, then the new running total.
+    LED_ANNOUNCE_QUEUE.push(`+${gained} SOL CREDITS ADDED`, `TOTAL NOW: ${total} SOL POINTS`);
+
+    if (screen) {
+      screen.classList.add('led-flash');
+      setTimeout(() => screen.classList.remove('led-flash'), 1700);
+    }
+    // Show the actual points gained directly on the board itself — a
+    // toast alone isn't reliable here since this screen is rotated into
+    // forced landscape and the toast isn't part of that rotated layout.
+    const gainBadge = document.getElementById('led-gain-badge');
+    if (gainBadge) {
+      gainBadge.textContent = `+${gained} SOL`;
+      gainBadge.classList.remove('led-gain-pop');
+      void gainBadge.offsetWidth; // force reflow so the animation restarts cleanly
+      gainBadge.classList.add('led-gain-pop');
+    }
+    if (navigator.vibrate) navigator.vibrate([70, 60, 70]);
+    showToast(`🎉 +${gained} SOL for ${teamName}!`);
+  }
+  LED_LAST_TOTAL = total;
+
+  startLedFrameRotation();
+}
+
+// Advances the live board through LED_ANNOUNCE_QUEUE first (one-time
+// "points added" screens), then LED_FRAMES on a loop — each held for
+// config.frameSeconds (announcements hold a shorter, fixed 3s).
+function tickLedFrame() {
+  const chunk1 = document.getElementById('led-chunk-1');
+  let text;
+  if (LED_ANNOUNCE_QUEUE.length) {
+    text = LED_ANNOUNCE_QUEUE.shift();
+  } else if (LED_FRAMES.length) {
+    text = LED_FRAMES[LED_FRAME_INDEX % LED_FRAMES.length];
+    LED_FRAME_INDEX++;
+  } else {
+    text = '';
+  }
+  showLedFrame(chunk1, text);
+
+  const config = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
+  const seconds = LED_ANNOUNCE_QUEUE.length || text.startsWith('+') || text.startsWith('TOTAL NOW')
+    ? 3
+    : (Number(config.frameSeconds) || 5);
+  LED_FRAME_TIMER = setTimeout(tickLedFrame, seconds * 1000);
+}
+
+function startLedFrameRotation() {
+  if (LED_FRAME_TIMER) return; // already running — new frames/queue picked up on the next tick
+  tickLedFrame();
+}
+
+function stopLedFrameRotation() {
+  if (LED_FRAME_TIMER) { clearTimeout(LED_FRAME_TIMER); LED_FRAME_TIMER = null; }
+}
+
+// ═══════════════════════════════════════════
+// ADMIN — LED BOARD CONTROL
+// Pushes one shared config (Script Properties on the GAS side) that
+// every faculty phone's LED board polls every ~6s, so the admin
+// controls what shows on ALL boards (or just one table) from here.
+// ═══════════════════════════════════════════
+let LED_ADMIN_THEME    = 'yellow';
+let LED_ADMIN_MSG_MODE = 'append';
+
+// Frame-rotation state for the admin's live preview swatch — mirrors the
+// faculty board so admins can see the Name → Points → Rank → Message
+// transition before pushing it out.
+let LED_PREVIEW_FRAMES = [];
+let LED_PREVIEW_INDEX  = 0;
+let LED_PREVIEW_TIMER  = null;
+
+function tickLedPreviewFrame() {
+  const chunk1 = document.getElementById('led-preview-chunk-1');
+  if (!chunk1) return;
+  if (!LED_PREVIEW_FRAMES.length) {
+    showLedFrame(chunk1, 'ADD A TABLE TO SEE A PREVIEW');
+    return;
+  }
+  const text = LED_PREVIEW_FRAMES[LED_PREVIEW_INDEX % LED_PREVIEW_FRAMES.length];
+  LED_PREVIEW_INDEX++;
+  showLedFrame(chunk1, text);
+
+  const config = getLedConfigFromUI();
+  const seconds = Number(config.frameSeconds) || 5;
+  LED_PREVIEW_TIMER = setTimeout(tickLedPreviewFrame, seconds * 1000);
+}
+
+function stopLedPreviewRotation() {
+  if (LED_PREVIEW_TIMER) { clearTimeout(LED_PREVIEW_TIMER); LED_PREVIEW_TIMER = null; }
+}
+
+function populateLedTargetSelect(selected) {
+  const sel = document.getElementById('led-cfg-target');
+  if (!sel) return;
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))]
+    .filter(Boolean).sort((a, b) => Number(a) - Number(b));
+  sel.innerHTML = '<option value="">All Tables</option>' +
+    tableNos.map(t => `<option value="${t}">${getTableLabel(t)}</option>`).join('');
+  sel.value = selected || '';
+}
+
+function selectLedTheme(theme) {
+  LED_ADMIN_THEME = theme;
+  document.querySelectorAll('.led-theme-swatch').forEach(btn => {
+    btn.style.borderColor = (btn.dataset.theme === theme) ? btn.style.color : '#333';
+  });
+  updateLedPreview();
+}
+
+function setLedMessageMode(mode) {
+  LED_ADMIN_MSG_MODE = mode;
+  const appendBtn  = document.getElementById('led-mode-append');
+  const replaceBtn = document.getElementById('led-mode-replace');
+  if (!appendBtn || !replaceBtn) return;
+  if (mode === 'replace') {
+    replaceBtn.style.background = '#c9960c'; replaceBtn.style.color = '#fff';
+    appendBtn.style.background  = '#fff';    appendBtn.style.color  = '#c9960c';
+  } else {
+    appendBtn.style.background  = '#c9960c'; appendBtn.style.color  = '#fff';
+    replaceBtn.style.background = '#fff';    replaceBtn.style.color = '#c9960c';
+  }
+  updateLedPreview();
+}
+
+function getLedConfigFromUI() {
+  return {
+    showName:        document.getElementById('led-cfg-showName')?.checked ?? true,
+    showPoints:      document.getElementById('led-cfg-showPoints')?.checked ?? true,
+    showRank:        document.getElementById('led-cfg-showRank')?.checked ?? false,
+    flashOnIncrease: document.getElementById('led-cfg-flash')?.checked ?? true,
+    theme:           LED_ADMIN_THEME,
+    customMessage:   document.getElementById('led-cfg-message')?.value || '',
+    messageMode:     LED_ADMIN_MSG_MODE,
+    targetTable:     document.getElementById('led-cfg-target')?.value || '',
+    frameSeconds:    Number(document.getElementById('led-cfg-frame-seconds')?.value) || 5
+  };
+}
+
+function updateLedPreview() {
+  const config = getLedConfigFromUI();
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))]
+    .filter(Boolean).sort((a, b) => Number(a) - Number(b));
+  const previewTable = config.targetTable || tableNos[0] || '';
+
+  applyLedTheme(document.getElementById('led-preview-screen'), config.theme);
+
+  stopLedPreviewRotation();
+  LED_PREVIEW_FRAMES = previewTable ? buildLedFrames(previewTable, config).frames : [];
+  LED_PREVIEW_INDEX = 0;
+  tickLedPreviewFrame(); // shows the first frame right away, then keeps cycling
+}
+
+async function openLedControl() {
+  populateLedTargetSelect('');
+  selectLedTheme('yellow');
+  setLedMessageMode('append');
+  updateLedPreview();
+  try {
+    const res = await apiGet('ledConfig');
+    if (res && res.success && res.config) {
+      const cfg = res.config;
+      const setChecked = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+      setChecked('led-cfg-showName',   cfg.showName);
+      setChecked('led-cfg-showPoints', cfg.showPoints);
+      setChecked('led-cfg-showRank',   cfg.showRank);
+      setChecked('led-cfg-flash',      cfg.flashOnIncrease);
+      const msgEl = document.getElementById('led-cfg-message');
+      if (msgEl) msgEl.value = cfg.customMessage || '';
+      const secEl = document.getElementById('led-cfg-frame-seconds');
+      if (secEl) secEl.value = String(cfg.frameSeconds || 5);
+      populateLedTargetSelect(cfg.targetTable || '');
+      selectLedTheme(cfg.theme || 'yellow');
+      setLedMessageMode(cfg.messageMode || 'append');
+    }
+  } catch (err) {
+    console.error('openLedControl error:', err);
+  }
+  updateLedPreview();
+}
+
+async function doSaveLedConfig() {
+  const config = getLedConfigFromUI();
+  const btn = document.querySelector('#s-a-led-control .btn-primary');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+    await apiPost({ action: 'setLedConfig', ...config });
+    showToast('📡 LED display settings pushed to every board');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to push settings'));
+    console.error('doSaveLedConfig error:', err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📡 Push to All LED Boards'; }
+  }
+}
+
+async function doClearLedMessage() {
+  try {
+    await apiPost({ action: 'clearLedMessage' });
+    const msgEl = document.getElementById('led-cfg-message');
+    if (msgEl) msgEl.value = '';
+    populateLedTargetSelect('');
+    updateLedPreview();
+    showToast('✅ LED message cleared from every board');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to clear message'));
+    console.error('doClearLedMessage error:', err);
+  }
 }
 
 function clearLoginFields(...ids) {
