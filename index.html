@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png" type="image/png">
 <title>SOL 1</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css?v=led4">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
@@ -1228,8 +1228,48 @@
     </div>
   </div>
   <div class="led-screen" id="led-screen">
+    <!-- Arcade corner decorations -->
+    <div class="arcade-corner arcade-corner-tl">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="2,26 2,2 26,2" stroke="rgba(255,212,0,0.55)" stroke-width="2.5" stroke-linecap="square"/>
+        <rect x="2" y="2" width="5" height="5" fill="rgba(255,212,0,0.7)"/>
+      </svg>
+    </div>
+    <div class="arcade-corner arcade-corner-tr">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="2,26 2,2 26,2" stroke="rgba(255,212,0,0.55)" stroke-width="2.5" stroke-linecap="square"/>
+        <rect x="2" y="2" width="5" height="5" fill="rgba(255,212,0,0.7)"/>
+      </svg>
+    </div>
+    <div class="arcade-corner arcade-corner-bl">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="2,26 2,2 26,2" stroke="rgba(255,212,0,0.55)" stroke-width="2.5" stroke-linecap="square"/>
+        <rect x="2" y="2" width="5" height="5" fill="rgba(255,212,0,0.7)"/>
+      </svg>
+    </div>
+    <div class="arcade-corner arcade-corner-br">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="2,26 2,2 26,2" stroke="rgba(255,212,0,0.55)" stroke-width="2.5" stroke-linecap="square"/>
+        <rect x="2" y="2" width="5" height="5" fill="rgba(255,212,0,0.7)"/>
+      </svg>
+    </div>
+
     <span class="led-points-pill" id="led-points-pill">LIVE</span>
     <span class="led-gain-badge" id="led-gain-badge"></span>
+
+    <!-- Idle "INSERT COIN" blink -->
+    <span class="arcade-idle" id="arcade-idle">★ SOL1 LIVE ★</span>
+
+    <!-- Rank bar (bottom) -->
+    <div class="led-rank-bar" id="led-rank-bar"></div>
+
+    <!-- Scrolling bottom ticker -->
+    <div class="arcade-ticker-wrap">
+      <span class="arcade-ticker" id="arcade-ticker">
+        ★ SOL 1 — SCHOOL OF LEADERS ★ DREAM · BUILD · LEAD ★ PHILIPPIANS 4:13 ★ POWERED BY CHRIST ★ SOL 1 — SCHOOL OF LEADERS ★ DREAM · BUILD · LEAD ★
+      </span>
+    </div>
+
     <div class="led-marquee-track" id="led-marquee-track">
       <span class="led-chunk" id="led-chunk-1"></span>
       <span class="led-chunk" id="led-chunk-2" aria-hidden="true"></span>
@@ -1585,6 +1625,115 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('app'), { childList: true, subtree: true }
   );
 });
+</script>
+<script>
+// ═══════════════════════════════════════════
+// ARCADE LED ENHANCEMENTS
+// ═══════════════════════════════════════════
+
+// 1. Pixel stars — sprinkle 18 twinkling dots across the LED screen
+function injectArcadeStars() {
+  const screen = document.getElementById('led-screen');
+  if (!screen || screen.querySelector('.arcade-star')) return;
+  for (let i = 0; i < 18; i++) {
+    const star = document.createElement('div');
+    star.className = 'arcade-star';
+    star.style.cssText = [
+      `top:${5 + Math.random() * 85}%`,
+      `left:${3 + Math.random() * 90}%`,
+      `--d:${1.2 + Math.random() * 2.5}s`,
+      `--dl:${Math.random() * 2}s`
+    ].join(';');
+    screen.appendChild(star);
+  }
+}
+
+// 2. Update the bottom rank bar with current rank text
+function updateArcadeRankBar() {
+  if (typeof APP === 'undefined' || !APP.currentFaculty) return;
+  const tableNo = APP.currentFaculty['Table Assigned'];
+  if (!tableNo) return;
+  const rankBar = document.getElementById('led-rank-bar');
+  if (!rankBar) return;
+  if (typeof getLedRankText === 'function') {
+    const rank = getLedRankText(tableNo);
+    rankBar.textContent = rank ? rank + ' — SOL 1' : '⭐ SOL 1 LIVE ⭐';
+  }
+}
+
+// 3. Idle animation — shows "★ SOL1 LIVE ★" when LED has been static for 30s
+let _arcadeIdleTimer = null;
+function resetArcadeIdle() {
+  const screen = document.getElementById('led-screen');
+  if (screen) screen.classList.remove('arcade-is-idle');
+  clearTimeout(_arcadeIdleTimer);
+  _arcadeIdleTimer = setTimeout(() => {
+    const s = document.getElementById('led-screen');
+    if (s) s.classList.add('arcade-is-idle');
+  }, 30000);
+}
+
+// 4. Hook into openLedBoard / closeLedBoard
+const _origOpenLed = window.openLedBoard;
+window.openLedBoard = async function() {
+  await _origOpenLed.apply(this, arguments);
+  injectArcadeStars();
+  resetArcadeIdle();
+  updateArcadeRankBar();
+};
+
+const _origCloseLed = window.closeLedBoard;
+window.closeLedBoard = function() {
+  _origCloseLed.apply(this, arguments);
+  clearTimeout(_arcadeIdleTimer);
+  const s = document.getElementById('led-screen');
+  if (s) s.classList.remove('arcade-is-idle');
+};
+
+// 5. Refresh rank bar whenever LED credits refresh
+const _origRefreshLed = window.refreshLedCredits;
+window.refreshLedCredits = async function() {
+  await _origRefreshLed.apply(this, arguments);
+  updateArcadeRankBar();
+  resetArcadeIdle();
+};
+
+// 6. Update ticker text dynamically based on table data
+function updateArcadeTicker() {
+  if (typeof APP === 'undefined' || !APP.currentFaculty) return;
+  const tableNo = APP.currentFaculty['Table Assigned'];
+  const ticker = document.getElementById('arcade-ticker');
+  if (!ticker || !tableNo) return;
+  const total = typeof getTableCredits === 'function' ? getTableCredits(tableNo) : '?';
+  const label = typeof getTableLabel === 'function' ? getTableLabel(tableNo).toUpperCase() : 'TABLE';
+  const rank = typeof getLedRankText === 'function' ? getLedRankText(tableNo) : '';
+  ticker.textContent =
+    ` ★ SOL 1 — SCHOOL OF LEADERS ★ ${label} ★ ${total} SOL POINTS ` +
+    (rank ? `★ ${rank} ` : '') +
+    `★ DREAM · BUILD · LEAD ★ PHILIPPIANS 4:13 ★ POWERED BY CHRIST ★ `;
+}
+
+// Patch renderLedBanner to also update ticker and rank
+const _origRender = window.renderLedBanner;
+if (typeof _origRender === 'function') {
+  window.renderLedBanner = function() {
+    _origRender.apply(this, arguments);
+    updateArcadeTicker();
+    updateArcadeRankBar();
+  };
+} else {
+  setTimeout(() => {
+    if (typeof renderLedBanner === 'function' && renderLedBanner !== window._arcadePatchedRender) {
+      const orig = renderLedBanner;
+      window._arcadePatchedRender = function() {
+        orig.apply(this, arguments);
+        updateArcadeTicker();
+        updateArcadeRankBar();
+      };
+      window.renderLedBanner = window._arcadePatchedRender;
+    }
+  }, 500);
+}
 </script>
 </body>
 </html>

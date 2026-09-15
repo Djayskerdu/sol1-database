@@ -725,3 +725,168 @@ input, select, button, textarea { font-family: var(--font); }
   color: #f4f4f4;
   text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.55), 0 0 34px rgba(255,255,255,0.3);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ARCADE LED UPGRADES — SOL1 DIY LAPTOP SCREEN EDITION
+   Makes the faculty LED scoreboard look like a real arcade
+   cabinet display when the phone sits in the cardboard laptop.
+   ═══════════════════════════════════════════════════════════ */
+
+.led-chunk, .led-points-pill, .led-gain-badge, .led-team-label,
+.led-topbar .led-exit-btn, .arcade-corner, .arcade-ticker,
+.arcade-idle, .led-rank-bar {
+  font-family: 'Press Start 2P', 'Courier New', ui-monospace, monospace !important;
+}
+
+.led-screen {
+  background: #010408 !important;
+  background-image:
+    radial-gradient(circle, rgba(255,220,80,0.08) 1px, transparent 1.5px),
+    repeating-linear-gradient(0deg, transparent, transparent 6px, rgba(0,0,0,0.25) 6px, rgba(0,0,0,0.25) 7px) !important;
+  background-size: 8px 8px, 100% 7px !important;
+  border: 2px solid #1a1200 !important;
+  box-shadow: inset 0 0 60px 20px rgba(0,0,0,0.95), inset 0 0 0 2px rgba(255,200,0,0.05) !important;
+  animation: arcadeBorderPulse 2.5s ease-in-out infinite, arcadeFlicker 8s linear infinite !important;
+}
+
+.led-screen::before {
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,0.45) 0px, rgba(0,0,0,0.45) 1px, transparent 1px, transparent 4px) !important;
+  z-index: 10;
+}
+.led-screen::after {
+  box-shadow: inset 0 0 80px 30px rgba(0,0,0,0.9), inset 0 0 30px 0 rgba(255,180,0,0.04) !important;
+  z-index: 11;
+}
+
+.led-topbar {
+  background: linear-gradient(180deg, #0d0d0d 0%, #060606 100%) !important;
+  border-bottom: 2px solid #ffd400 !important;
+  box-shadow: 0 2px 20px rgba(255,212,0,0.25) !important;
+  padding: 10px 14px !important;
+}
+.led-team-label {
+  color: #ffd400 !important;
+  font-size: 9px !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 8px rgba(255,212,0,0.9), 0 0 20px rgba(255,160,0,0.5) !important;
+}
+
+.led-chunk {
+  font-size: clamp(18px, 7vw, 48px) !important;
+  letter-spacing: 4px !important;
+  line-height: 1.3 !important;
+  text-shadow:
+    0 0 4px rgba(255,212,0,1), 0 0 10px rgba(255,180,0,0.9),
+    0 0 22px rgba(255,140,0,0.7), 0 0 48px rgba(255,100,0,0.4),
+    0 0 80px rgba(255,80,0,0.2) !important;
+  filter: contrast(1.1);
+  position: relative; z-index: 5;
+}
+
+@keyframes arcadeBorderPulse {
+  0%, 100% { outline-color: rgba(255,212,0,0.12); box-shadow: inset 0 0 60px 20px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,212,0,0.08); }
+  50%       { outline-color: rgba(255,212,0,0.3);  box-shadow: inset 0 0 60px 20px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,212,0,0.2), 0 0 18px 0 rgba(255,180,0,0.15); }
+}
+@keyframes arcadeFlicker {
+  0%, 97%, 100% { opacity: 1; }
+  98% { opacity: 0.93; }
+  99% { opacity: 0.97; }
+}
+
+.arcade-corner { position: absolute; z-index: 20; width: 28px; height: 28px; pointer-events: none; }
+.arcade-corner svg { width: 100%; height: 100%; }
+.arcade-corner-tl { top: 6px; left: 6px; }
+.arcade-corner-tr { top: 6px; right: 6px; transform: scaleX(-1); }
+.arcade-corner-bl { bottom: 6px; left: 6px; transform: scaleY(-1); }
+.arcade-corner-br { bottom: 6px; right: 6px; transform: scale(-1); }
+
+.led-points-pill {
+  font-size: 8px !important;
+  letter-spacing: 1.5px !important;
+  background: rgba(255,212,0,0.08) !important;
+  border: 1.5px solid rgba(255,212,0,0.6) !important;
+  color: #ffd400 !important;
+  text-shadow: 0 0 8px rgba(255,212,0,0.8) !important;
+  box-shadow: 0 0 10px rgba(255,212,0,0.15), inset 0 0 6px rgba(255,212,0,0.05) !important;
+  padding: 5px 10px !important;
+  border-radius: 3px !important;
+  z-index: 15;
+}
+
+.led-rank-bar {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  font-size: 7px; letter-spacing: 2px; color: rgba(255,212,0,0.45);
+  white-space: nowrap; z-index: 15;
+  text-shadow: 0 0 6px rgba(255,212,0,0.3);
+  animation: rankBarBlink 3s step-end infinite;
+}
+@keyframes rankBarBlink { 0%, 90%, 100% { opacity: 1; } 95% { opacity: 0; } }
+
+.arcade-idle {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  font-size: 8px; letter-spacing: 2px; color: rgba(255,212,0,0.7);
+  white-space: nowrap; z-index: 16;
+  animation: arcadeIdleBlink 1.1s step-end infinite;
+  display: none;
+}
+.led-screen.arcade-is-idle .arcade-idle { display: block; }
+@keyframes arcadeIdleBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.arcade-ticker-wrap {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 20px;
+  overflow: hidden; z-index: 18;
+  background: rgba(0,0,0,0.6);
+  border-top: 1px solid rgba(255,212,0,0.2);
+}
+.arcade-ticker {
+  display: inline-block; white-space: nowrap;
+  font-size: 7px; color: rgba(255,212,0,0.55); letter-spacing: 2px;
+  padding-left: 100%;
+  animation: arcadeTicker 22s linear infinite;
+}
+@keyframes arcadeTicker { 0% { transform: translateX(0); } 100% { transform: translateX(-200%); } }
+
+.led-gain-badge {
+  font-size: clamp(14px, 4.5vw, 26px) !important;
+  letter-spacing: 1px !important;
+  top: 10px !important; left: 12px !important;
+  text-shadow: 0 0 6px rgba(61,255,90,1), 0 0 16px rgba(61,255,90,0.9), 0 0 34px rgba(61,255,90,0.6) !important;
+}
+
+.led-theme-green .led-chunk {
+  color: #00ff44 !important;
+  text-shadow: 0 0 4px rgba(0,255,68,1), 0 0 12px rgba(0,255,68,0.9), 0 0 28px rgba(0,255,68,0.6), 0 0 60px rgba(0,200,68,0.3) !important;
+}
+.led-theme-red .led-chunk {
+  color: #ff2222 !important;
+  text-shadow: 0 0 4px rgba(255,34,34,1), 0 0 12px rgba(255,34,34,0.9), 0 0 28px rgba(255,34,34,0.6), 0 0 60px rgba(200,0,0,0.3) !important;
+}
+.led-theme-blue .led-chunk {
+  color: #00ccff !important;
+  text-shadow: 0 0 4px rgba(0,204,255,1), 0 0 12px rgba(0,204,255,0.9), 0 0 28px rgba(0,204,255,0.6), 0 0 60px rgba(0,140,255,0.3) !important;
+}
+.led-theme-white .led-chunk {
+  color: #f0f0f0 !important;
+  text-shadow: 0 0 4px rgba(255,255,255,1), 0 0 12px rgba(255,255,255,0.9), 0 0 28px rgba(255,255,255,0.5), 0 0 60px rgba(200,200,255,0.2) !important;
+}
+
+.led-exit-btn {
+  font-size: 7px !important;
+  letter-spacing: 1px !important;
+  border: 1.5px solid rgba(255,212,0,0.4) !important;
+  color: rgba(255,212,0,0.7) !important;
+  border-radius: 3px !important;
+  text-shadow: 0 0 6px rgba(255,212,0,0.5) !important;
+}
+.led-exit-btn:active {
+  background: rgba(255,212,0,0.1) !important;
+  border-color: rgba(255,212,0,0.9) !important;
+}
+
+.arcade-star {
+  position: absolute; width: 2px; height: 2px;
+  background: rgba(255,212,0,0.6); border-radius: 0;
+  animation: arcadeStarTwinkle var(--d, 2s) var(--dl, 0s) ease-in-out infinite alternate;
+  pointer-events: none; z-index: 2;
+}
+@keyframes arcadeStarTwinkle { 0% { opacity: 0.1; transform: scale(0.8); } 100% { opacity: 0.7; transform: scale(1.4); } }
