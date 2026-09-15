@@ -2881,11 +2881,20 @@ function startLedPolling() {
   stopLedPolling();
   // 6s keeps the board feeling "live" without hammering Apps Script —
   // this only re-fetches the CREDITS sheet, not the full data bundle.
-  LED_POLL_INTERVAL = setInterval(refreshLedCredits, 6000);
+  // A small random jitter on each tick keeps multiple LED boards from
+  // landing on the exact same instant every cycle (which is what shows
+  // up as several simultaneous doGet calls in the Executions log).
+  const scheduleNext = () => {
+    LED_POLL_INTERVAL = setTimeout(async () => {
+      await refreshLedCredits();
+      scheduleNext();
+    }, 6000 + Math.floor(Math.random() * 2000));
+  };
+  scheduleNext();
 }
 
 function stopLedPolling() {
-  if (LED_POLL_INTERVAL) { clearInterval(LED_POLL_INTERVAL); LED_POLL_INTERVAL = null; }
+  if (LED_POLL_INTERVAL) { clearTimeout(LED_POLL_INTERVAL); LED_POLL_INTERVAL = null; }
 }
 
 async function refreshLedCredits() {
