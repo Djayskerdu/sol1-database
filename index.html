@@ -1177,7 +1177,8 @@
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div class="field" style="margin-bottom:10px">
         <label>Message</label>
-        <input type="text" id="led-cfg-message" placeholder="e.g. LUNCH BREAK IN 5 MINS" maxlength="80" oninput="updateLedPreview()">
+        <input type="text" id="led-cfg-message" placeholder="e.g. LUNCH BREAK IN 5 MINS" maxlength="160" oninput="handleLedMessageInput()">
+        <div id="led-cfg-message-hint" style="font-size:11px;color:var(--gray);margin-top:4px;min-height:14px"></div>
       </div>
       <div class="field" style="margin-bottom:10px">
         <label>Send To</label>

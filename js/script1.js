@@ -3111,6 +3111,83 @@ function setLedMessageMode(mode) {
   updateLedPreview();
 }
 
+// ═══════════════════════════════════════════
+// LED CUSTOM MESSAGE — AUTO-COMPRESS
+// The board looks best under ~80 characters per line. Rather than just
+// blocking typing at a hard maxlength (which reads as an "error" to the
+// admin), we let them type further and automatically shrink the text by
+// swapping in common abbreviations — longest words first, so we save the
+// most space with the fewest substitutions. Only if it's still too long
+// after every known abbreviation do we fall back to a hard truncate.
+// ═══════════════════════════════════════════
+const LED_MSG_SOFT_LIMIT = 80; // matches the board's comfortable line length
+
+// Longest replacement key first within a tie doesn't matter here — order
+// is just "common long words that save the most characters" up top.
+const LED_MSG_ABBREVIATIONS = [
+  ['CONGRATULATIONS', 'CONGRATS'], ['ANNOUNCEMENT', 'ANNC'], ['IMMEDIATELY', 'NOW'],
+  ['INFORMATION', 'INFO'], ['REGISTRATION', 'REG'], ['APPRECIATE', 'THANKS'],
+  ['EVERYONE', 'ALL'], ['ATTENTION', 'ATTN'], ['MINUTES', 'MIN'], ['SECONDS', 'SEC'],
+  ['BEFORE', 'B4'], ['PLEASE', 'PLS'], ['THANK YOU', 'THX'], ['WITHOUT', 'W/O'],
+  ['TONIGHT', '2NITE'], ['TOMORROW', '2MORROW'], ['MESSAGE', 'MSG'], ['WELCOME', 'WELCOME'],
+  ['POINTS', 'PTS'], ['TABLE', 'TBL'], ['HOURS', 'HRS'], ['ROUND', 'RD'], ['GROUP', 'GRP'],
+  ['BREAK', 'BRK'], ['HOUR', 'HR'], ['WITH', 'W/'], ['MINUTE', 'MIN'], ['SECOND', 'SEC'],
+  ['AND', '&'], ['FOR', '4'], ['YOU', 'U'], ['ARE', 'R'], ['TO', '2']
+];
+
+// Applies whole-word (case-insensitive) swaps only, one at a time, until
+// the text fits — never chops a word mid-way through automatically.
+function compressLedMessage(text, limit) {
+  limit = limit || LED_MSG_SOFT_LIMIT;
+  let msg = (text || '').trim();
+  if (msg.length <= limit) return msg;
+
+  for (const [long, short] of LED_MSG_ABBREVIATIONS) {
+    if (msg.length <= limit) break;
+    const re = new RegExp('\\b' + long.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+    if (re.test(msg)) msg = msg.replace(re, short);
+  }
+
+  // Last resort: still too long after every abbreviation — hard truncate
+  // with an ellipsis rather than letting it silently overflow the board.
+  if (msg.length > limit) msg = msg.slice(0, limit - 1).trim() + '…';
+  return msg;
+}
+
+// Live oninput handler for #led-cfg-message: compresses in place once the
+// admin types past the soft limit, and shows a small hint so it's obvious
+// what happened (never a silent, confusing edit).
+function handleLedMessageInput() {
+  const el = document.getElementById('led-cfg-message');
+  const hint = document.getElementById('led-cfg-message-hint');
+  if (!el) return;
+
+  const original = el.value;
+  if (original.length > LED_MSG_SOFT_LIMIT) {
+    const compressed = compressLedMessage(original, LED_MSG_SOFT_LIMIT);
+    if (compressed !== original) {
+      const cursorWasAtEnd = el.selectionStart === original.length;
+      el.value = compressed;
+      if (cursorWasAtEnd) el.setSelectionRange(compressed.length, compressed.length);
+    }
+  }
+
+  if (hint) {
+    const len = el.value.length;
+    if (len >= LED_MSG_SOFT_LIMIT) {
+      hint.textContent = `${len}/${LED_MSG_SOFT_LIMIT} — shortened to fit the board`;
+      hint.style.color = '#c9960c';
+    } else if (len >= LED_MSG_SOFT_LIMIT - 15) {
+      hint.textContent = `${len}/${LED_MSG_SOFT_LIMIT}`;
+      hint.style.color = 'var(--gray)';
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  updateLedPreview();
+}
+
 function getLedConfigFromUI() {
   return {
     showName:        document.getElementById('led-cfg-showName')?.checked ?? true,
@@ -3154,7 +3231,7 @@ async function openLedControl() {
       setChecked('led-cfg-showRank',   cfg.showRank);
       setChecked('led-cfg-flash',      cfg.flashOnIncrease);
       const msgEl = document.getElementById('led-cfg-message');
-      if (msgEl) msgEl.value = cfg.customMessage || '';
+      if (msgEl) { msgEl.value = cfg.customMessage || ''; handleLedMessageInput(); }
       const secEl = document.getElementById('led-cfg-frame-seconds');
       if (secEl) secEl.value = String(cfg.frameSeconds || 5);
       populateLedTargetSelect(cfg.targetTable || '');
@@ -3187,6 +3264,8 @@ async function doClearLedMessage() {
     await apiPost({ action: 'clearLedMessage' });
     const msgEl = document.getElementById('led-cfg-message');
     if (msgEl) msgEl.value = '';
+    const hintEl = document.getElementById('led-cfg-message-hint');
+    if (hintEl) hintEl.textContent = '';
     populateLedTargetSelect('');
     updateLedPreview();
     showToast('✅ LED message cleared from every board');
