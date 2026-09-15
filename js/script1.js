@@ -2799,8 +2799,22 @@ const LED_CONFIG_DEFAULTS_CLIENT = {
 // animation only when the text actually changed — shared by the live
 // board rotation and the admin preview rotation.
 function showLedFrame(el, text) {
-  if (!el || el.textContent === text) return;
-  el.textContent = text;
+  if (!el || el.dataset.ledText === text) return;
+  el.dataset.ledText = text;
+
+  // "TEAM NAME | TABLE X" frames are the ones long enough to run off the
+  // edges of a phone screen in forced-landscape mode (see buildLedFrames).
+  // Split those onto two centered lines — name on top, table on the
+  // bottom — instead of clipping a single nowrap line.
+  const parts = text.split(' | ');
+  if (parts.length === 2) {
+    el.innerHTML = `<span class="led-line">${escapeHtml(parts[0])}</span><span class="led-line led-line-2">${escapeHtml(parts[1])}</span>`;
+    el.classList.add('led-chunk-split');
+  } else {
+    el.textContent = text;
+    el.classList.remove('led-chunk-split');
+  }
+
   el.classList.remove('led-text-in');
   void el.offsetWidth; // force reflow so the animation restarts cleanly
   el.classList.add('led-text-in');

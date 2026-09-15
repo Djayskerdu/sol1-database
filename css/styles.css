@@ -653,6 +653,26 @@ input, select, button, textarea { font-family: var(--font); }
   60%  { opacity: 1; transform: translateY(-3px) scale(1.02); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
+/* "TEAM NAME | TABLE X" frames — stacked as two centered lines so long
+   team names don't run off the edges of a phone screen in landscape. */
+.led-chunk.led-chunk-split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.8vw, 12px);
+  white-space: normal;
+}
+.led-chunk.led-chunk-split .led-line {
+  display: block;
+  white-space: nowrap;
+  font-size: clamp(20px, 7vw, 46px);
+  letter-spacing: 4px;
+}
+.led-chunk.led-chunk-split .led-line-2 {
+  font-size: clamp(16px, 5.5vw, 34px);
+  opacity: 0.92;
+}
 .led-screen.led-flash .led-chunk {
   animation: ledFlashPulse 0.55s ease-in-out 3;
 }
