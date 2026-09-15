@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>SOL 1</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=led2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 </head>
@@ -307,28 +307,6 @@
     <button class="ni" onclick="go('s-f-devotional')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Devot.</button>
     <button class="ni" id="f-bnav-admin" onclick="go('s-admin-home')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Admin</button>
     <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     FACULTY — LIVE LED SCOREBOARD
-     Meant to run full-screen on the phone that sits
-     inside the SOL1 DIY cardboard laptop. Polls the
-     sheet for the latest table SOL credits so it stays
-     live whenever an admin adds points on their end.
-══════════════════════════════════════════ -->
-<div class="screen" id="s-f-led" style="background:#020202">
-  <div class="led-topbar">
-    <button class="topbar-back" onclick="closeLedBoard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <span class="led-team-label" id="led-team-label">TABLE</span>
-    <button class="led-exit-btn" onclick="toggleLedFullscreen()">⛶ Full</button>
-  </div>
-  <div class="led-screen" id="led-screen">
-    <span class="led-points-pill" id="led-points-pill">LIVE</span>
-    <div class="led-marquee-track" id="led-marquee-track">
-      <span class="led-chunk" id="led-chunk-1"></span>
-      <span class="led-chunk" id="led-chunk-2" aria-hidden="true"></span>
-    </div>
   </div>
 </div>
 
@@ -1210,12 +1188,40 @@
 </div><!-- /desktop-main -->
 </div><!-- /app -->
 
-
+<!-- ══════════════════════════════════════════
+     FACULTY — LIVE LED SCOREBOARD (standalone)
+     Deliberately lives OUTSIDE #app so it is never
+     limited to the app's 430px mobile-shell width —
+     it takes over the entire device viewport.
+     Also force-rotates to landscape via CSS when the
+     phone is held/mounted in portrait, since the
+     cardboard laptop's screen slot is landscape and
+     iOS often won't auto-rotate a locked phone.
+     Polls the sheet independently so it stays live
+     whenever an admin adds points on their end.
+══════════════════════════════════════════ -->
+<div class="led-fullscreen-overlay led-force-landscape" id="s-f-led">
+  <div class="led-topbar">
+    <button class="topbar-back" onclick="closeLedBoard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="led-team-label" id="led-team-label">TABLE</span>
+    <div style="display:flex;gap:8px">
+      <button class="led-exit-btn" onclick="toggleLedFlip()" title="Flip if the picture looks upside down">↻ Flip</button>
+      <button class="led-exit-btn" onclick="toggleLedFullscreen()">⛶ Full</button>
+    </div>
+  </div>
+  <div class="led-screen" id="led-screen">
+    <span class="led-points-pill" id="led-points-pill">LIVE</span>
+    <div class="led-marquee-track" id="led-marquee-track">
+      <span class="led-chunk" id="led-chunk-1"></span>
+      <span class="led-chunk" id="led-chunk-2" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>
 
 <!-- SERVICE WORKER registration -->
 
 
-<script src="js/script1.js"></script>
+<script src="js/script1.js?v=led2"></script>
 <script src="js/script2.js"></script>
 
 <!-- ══════════════════════════════════════════
