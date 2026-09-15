@@ -2747,14 +2747,14 @@ function buildLedText(tableNo, config) {
     const rank = getLedRankText(tableNo);
     if (rank) parts.push(rank);
   }
-  let base = parts.length ? parts.join('  ★  ') : getTableLabel(tableNo).toUpperCase();
+  let base = parts.length ? parts.join('    ') : getTableLabel(tableNo).toUpperCase();
 
   const msg = (config.customMessage || '').trim();
   const targetsThisTable = !config.targetTable || String(config.targetTable) === String(tableNo);
   if (msg && targetsThisTable) {
-    base = (config.messageMode === 'replace') ? msg : `${base}  ★  ${msg}`;
+    base = (config.messageMode === 'replace') ? msg : `${base}    ${msg}`;
   }
-  return { text: `${base}  ★  `, total };
+  return { text: base, total };
 }
 
 async function openLedBoard() {
@@ -2840,24 +2840,17 @@ function renderLedBanner() {
   const screen = document.getElementById('led-screen');
   applyLedTheme(screen, config.theme);
 
-  const track  = document.getElementById('led-marquee-track');
   const chunk1 = document.getElementById('led-chunk-1');
-  const chunk2 = document.getElementById('led-chunk-2');
-  if (!track || !chunk1 || !chunk2) return;
+  if (!chunk1) return;
 
-  chunk1.textContent = text;
-  chunk2.textContent = text;
-
-  // Restart the scroll at a speed proportional to text length so a longer
-  // team name / higher point count doesn't fly by too fast, and so the
-  // loop (translateX -50%) stays seamless after the text changes.
-  requestAnimationFrame(() => {
-    const width    = chunk1.offsetWidth || 400;
-    const duration = Math.max(8, width / 55); // ~55px per second
-    track.style.animation = 'none';
-    void track.offsetWidth; // force reflow so the animation restarts cleanly
-    track.style.animation = `ledscroll ${duration}s linear infinite`;
-  });
+  // Static display now — only re-render and pop when the text actually
+  // changed, so a same-content poll (every 6s) doesn't re-trigger it.
+  if (chunk1.textContent !== text) {
+    chunk1.textContent = text;
+    chunk1.classList.remove('led-text-in');
+    void chunk1.offsetWidth; // force reflow so the animation restarts cleanly
+    chunk1.classList.add('led-text-in');
+  }
 
   const increased = LED_LAST_TOTAL !== null && total > LED_LAST_TOTAL && config.flashOnIncrease !== false;
   if (increased) {
@@ -2933,23 +2926,16 @@ function updateLedPreview() {
   const previewTable = config.targetTable || tableNos[0] || '';
 
   const chunk1 = document.getElementById('led-preview-chunk-1');
-  const chunk2 = document.getElementById('led-preview-chunk-2');
-  const track  = document.getElementById('led-preview-track');
-  if (!chunk1 || !chunk2) return;
+  if (!chunk1) return;
 
-  const text = previewTable ? buildLedText(previewTable, config).text : 'ADD A TABLE TO SEE A PREVIEW  ★  ';
-  chunk1.textContent = text;
-  chunk2.textContent = text;
+  const text = previewTable ? buildLedText(previewTable, config).text : 'ADD A TABLE TO SEE A PREVIEW';
   applyLedTheme(document.getElementById('led-preview-screen'), config.theme);
 
-  if (track) {
-    requestAnimationFrame(() => {
-      const width    = chunk1.offsetWidth || 300;
-      const duration = Math.max(6, width / 55);
-      track.style.animation = 'none';
-      void track.offsetWidth;
-      track.style.animation = `ledscroll ${duration}s linear infinite`;
-    });
+  if (chunk1.textContent !== text) {
+    chunk1.textContent = text;
+    chunk1.classList.remove('led-text-in');
+    void chunk1.offsetWidth;
+    chunk1.classList.add('led-text-in');
   }
 }
 
