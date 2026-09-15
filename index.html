@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>SOL 1</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=led2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 </head>
@@ -128,6 +128,10 @@
     <button class="sidebar-btn" onclick="go('s-a-devotional')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Devotional
+    </button>
+    <button class="sidebar-btn" onclick="go('s-a-led-control')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg>
+      LED Control
     </button>
   </div>
 
@@ -262,6 +266,12 @@
         <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
+    <div class="slabel">Team Points</div>
+    <button class="menu-item led-menu-item" onclick="openLedBoard()">
+      <div class="mi-icon" style="background:#1a1a1a"><svg viewBox="0 0 24 24" stroke="#ffd400" fill="none" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg></div>
+      <div class="mi-text"><div class="mi-title" style="color:#ffd400">📺 Live LED Scoreboard</div><div class="mi-sub" style="color:#999">Team SOL points — updates live</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24" stroke="#ffd400"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
     <div class="slabel">Lessons</div>
     <button class="menu-item" onclick="go('s-f-lessons')">
       <div class="mi-icon" style="background:#e8f0fb"><svg viewBox="0 0 24 24" stroke="#d6336c"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
@@ -532,6 +542,11 @@
       <div class="mi-icon" style="background:#e8f5ee"><svg viewBox="0 0 24 24" stroke="#e64980" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
       <div class="mi-text"><div class="mi-title">Devotional &amp; Activities Record</div><div class="mi-sub">View all tables daily completion</div></div>
       <svg class="mi-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="menu-item led-menu-item" onclick="go('s-a-led-control')">
+      <div class="mi-icon" style="background:#1a1a1a"><svg viewBox="0 0 24 24" stroke="#ffd400" fill="none" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg></div>
+      <div class="mi-text"><div class="mi-title" style="color:#ffd400">📺 LED Board Control</div><div class="mi-sub" style="color:#999">Control what every table's LED shows</div></div>
+      <svg class="mi-arr" viewBox="0 0 24 24" stroke="#ffd400"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
   </div>
   <div class="bnav" style="--active-color:var(--green)">
@@ -1085,17 +1100,145 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════
+     ADMIN — LED BOARD CONTROL
+     Controls what every faculty phone's LED
+     Scoreboard shows. Faculty phones poll this
+     config every ~6s, so changes here go live on
+     every cardboard-laptop screen automatically.
+══════════════════════════════════════════ -->
+<div class="screen" id="s-a-led-control">
+  <div class="topbar" style="background:#111">
+    <button class="topbar-back" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="topbar-title">📺 LED Board Control</span>
+  </div>
+  <div class="body">
 
+    <!-- Live preview -->
+    <div class="slabel">Preview</div>
+    <div class="led-screen" id="led-preview-screen" style="height:100px;border-radius:12px;margin-bottom:8px">
+      <div class="led-marquee-track" id="led-preview-track">
+        <span class="led-chunk" id="led-preview-chunk-1" style="font-size:clamp(22px,6.5vw,34px)"></span>
+        <span class="led-chunk" id="led-preview-chunk-2" style="font-size:clamp(22px,6.5vw,34px)" aria-hidden="true"></span>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:var(--gray);margin:0 0 16px">Each item below gets its own screen and transitions to the next.</p>
+
+    <!-- What shows -->
+    <div class="slabel">What Shows On Every Board</div>
+    <div class="card" style="padding:4px 16px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0;cursor:pointer">
+        <input type="checkbox" id="led-cfg-showName" checked style="width:18px;height:18px;accent-color:#c9960c;cursor:pointer" onchange="updateLedPreview()">
+        <div><strong>Show Team Name</strong><br><small style="color:var(--gray)">e.g. "GLORIOUS WARRIOR"</small></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0;cursor:pointer">
+        <input type="checkbox" id="led-cfg-showPoints" checked style="width:18px;height:18px;accent-color:#c9960c;cursor:pointer" onchange="updateLedPreview()">
+        <div><strong>Show Points</strong><br><small style="color:var(--gray)">e.g. "120 SOL POINTS"</small></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0;cursor:pointer">
+        <input type="checkbox" id="led-cfg-showRank" style="width:18px;height:18px;accent-color:#c9960c;cursor:pointer" onchange="updateLedPreview()">
+        <div><strong>Show Rank</strong><br><small style="color:var(--gray)">e.g. "🥇 1ST PLACE" based on the table leaderboard</small></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:12px 0;cursor:pointer">
+        <input type="checkbox" id="led-cfg-flash" checked style="width:18px;height:18px;accent-color:#c9960c;cursor:pointer">
+        <div><strong>Flash When Points Increase</strong><br><small style="color:var(--gray)">Board flashes, then shows "+X SOL CREDITS ADDED" and the new total before returning to the normal rotation</small></div>
+      </label>
+    </div>
+
+    <!-- Transition timing -->
+    <div class="slabel">Time Per Screen</div>
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div class="field">
+        <label>How long each screen shows before transitioning</label>
+        <select id="led-cfg-frame-seconds" onchange="updateLedPreview()">
+          <option value="3">3 seconds</option>
+          <option value="4">4 seconds</option>
+          <option value="5" selected>5 seconds</option>
+          <option value="6">6 seconds</option>
+          <option value="8">8 seconds</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Theme -->
+    <div class="slabel">LED Color</div>
+    <div id="led-theme-swatches" style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="led-theme-swatch" data-theme="yellow" onclick="selectLedTheme('yellow')" style="flex:1;height:44px;border-radius:10px;border:2px solid #ffd400;background:#000;color:#ffd400;font-weight:700;cursor:pointer">Yellow</button>
+      <button class="led-theme-swatch" data-theme="green" onclick="selectLedTheme('green')" style="flex:1;height:44px;border-radius:10px;border:2px solid #333;background:#000;color:#3dff5a;font-weight:700;cursor:pointer">Green</button>
+      <button class="led-theme-swatch" data-theme="red" onclick="selectLedTheme('red')" style="flex:1;height:44px;border-radius:10px;border:2px solid #333;background:#000;color:#ff3d3d;font-weight:700;cursor:pointer">Red</button>
+      <button class="led-theme-swatch" data-theme="blue" onclick="selectLedTheme('blue')" style="flex:1;height:44px;border-radius:10px;border:2px solid #333;background:#000;color:#3dc8ff;font-weight:700;cursor:pointer">Blue</button>
+      <button class="led-theme-swatch" data-theme="white" onclick="selectLedTheme('white')" style="flex:1;height:44px;border-radius:10px;border:2px solid #333;background:#000;color:#f4f4f4;font-weight:700;cursor:pointer">White</button>
+    </div>
+
+    <!-- Custom message -->
+    <div class="slabel">Send a Custom Message</div>
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div class="field" style="margin-bottom:10px">
+        <label>Message</label>
+        <input type="text" id="led-cfg-message" placeholder="e.g. LUNCH BREAK IN 5 MINS" maxlength="80" oninput="updateLedPreview()">
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Send To</label>
+        <select id="led-cfg-target">
+          <option value="">All Tables</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1.5px solid #c9960c">
+        <button id="led-mode-append" onclick="setLedMessageMode('append')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#c9960c;color:#fff;border:none;cursor:pointer">Append</button>
+        <button id="led-mode-replace" onclick="setLedMessageMode('replace')" style="flex:1;padding:9px;font-size:13px;font-weight:600;background:#fff;color:#c9960c;border:none;cursor:pointer">Replace</button>
+      </div>
+      <button style="width:100%;padding:11px;border-radius:var(--radius-sm);border:1.5px solid #ddd;background:#fff;color:#555;font-weight:600;font-size:13px;cursor:pointer" onclick="doClearLedMessage()">Clear Message</button>
+    </div>
+
+    <button class="btn-primary" style="width:100%;background:#111;margin-bottom:8px" onclick="doSaveLedConfig()">📡 Push to All LED Boards</button>
+    <p style="text-align:center;font-size:11px;color:var(--gray);margin-top:0">Faculty phones pick up changes within ~6 seconds.</p>
+  </div>
+  <div class="bnav" style="--active-color:var(--green)">
+    <button class="ni" onclick="go('s-admin-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="ni" onclick="go('s-a-tables')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Tables</button>
+    <button class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg>LED</button>
+    <button class="ni" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+  </div>
+</div>
 
 </div><!-- /desktop-main -->
 </div><!-- /app -->
 
-
+<!-- ══════════════════════════════════════════
+     FACULTY — LIVE LED SCOREBOARD (standalone)
+     Deliberately lives OUTSIDE #app so it is never
+     limited to the app's 430px mobile-shell width —
+     it takes over the entire device viewport.
+     Also force-rotates to landscape via CSS when the
+     phone is held/mounted in portrait, since the
+     cardboard laptop's screen slot is landscape and
+     iOS often won't auto-rotate a locked phone.
+     Polls the sheet independently so it stays live
+     whenever an admin adds points on their end.
+══════════════════════════════════════════ -->
+<div class="led-fullscreen-overlay led-force-landscape" id="s-f-led">
+  <div class="led-topbar">
+    <button class="topbar-back" onclick="closeLedBoard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="led-team-label" id="led-team-label">TABLE</span>
+    <div style="display:flex;gap:8px">
+      <button class="led-exit-btn" onclick="toggleLedFlip()" title="Flip if the picture looks upside down">↻ Flip</button>
+      <button class="led-exit-btn" onclick="toggleLedFullscreen()">⛶ Full</button>
+    </div>
+  </div>
+  <div class="led-screen" id="led-screen">
+    <span class="led-points-pill" id="led-points-pill">LIVE</span>
+    <span class="led-gain-badge" id="led-gain-badge"></span>
+    <div class="led-marquee-track" id="led-marquee-track">
+      <span class="led-chunk" id="led-chunk-1"></span>
+      <span class="led-chunk" id="led-chunk-2" aria-hidden="true"></span>
+    </div>
+  </div>
+</div>
 
 <!-- SERVICE WORKER registration -->
 
 
-<script src="js/script1.js"></script>
+<script src="js/script1.js?v=led2"></script>
 <script src="js/script2.js"></script>
 
 <!-- ══════════════════════════════════════════
@@ -1318,7 +1461,7 @@ function updateSidebar() {
     .forEach(id => { var el = document.getElementById(id); if(el) el.style.display = 'none'; });
 
   var facultyScreens = ['s-faculty-home','s-f-lessons','s-f-students','s-f-payment','s-f-credits','s-add-credit','s-f-devotional','s-f-devot-detail'];
-  var adminScreens   = ['s-admin-home','s-a-student-att','s-a-faculty-att','s-a-tables','s-a-table-detail','s-a-leaderboard','s-a-makeup','s-a-dropped','s-a-devotional','s-a-devot-table'];
+  var adminScreens   = ['s-admin-home','s-a-student-att','s-a-faculty-att','s-a-tables','s-a-table-detail','s-a-leaderboard','s-a-makeup','s-a-dropped','s-a-devotional','s-a-devot-table','s-a-led-control'];
   var recordScreens  = ['s-record-home','s-r-qr','s-r-attendance','s-r-payment','s-r-balances'];
 
   var role = typeof getRoleType === 'function' ? getRoleType(faculty['Role']) : 'faculty';
@@ -1375,7 +1518,8 @@ function updateSidebar() {
     's-a-tables':'sidebar-admin-nav','s-a-table-detail':'sidebar-admin-nav',
     's-a-leaderboard':'sidebar-admin-nav','s-a-makeup':'sidebar-admin-nav',
     's-a-dropped':'sidebar-admin-nav','s-a-devotional':'sidebar-admin-nav',
-    's-a-devot-table':'sidebar-admin-nav','s-record-home':'sidebar-record-nav',
+    's-a-devot-table':'sidebar-admin-nav','s-a-led-control':'sidebar-admin-nav',
+    's-record-home':'sidebar-record-nav',
     's-r-qr':'sidebar-record-nav','s-r-attendance':'sidebar-record-nav',
     's-r-payment':'sidebar-record-nav','s-r-balances':'sidebar-record-nav'
   };
