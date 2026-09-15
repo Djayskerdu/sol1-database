@@ -425,6 +425,7 @@ function refreshCurrentScreen() {
   if (id === 's-r-attendance')  switchAttTab('students');
   if (id === 's-r-payment')     populatePayStudentSelect();
   if (id === 's-r-balances')    { renderBalances(); renderBalancesSummary(); }
+  if (id === 's-a-led-control') openLedControl();
 }
 
 // ═══════════════════════════════════════════
@@ -463,6 +464,7 @@ function go(id) {
   if (id === 's-r-payment')     populatePayStudentSelect();
   if (id === 's-r-balances')    { renderBalances(); renderBalancesSummary(); }
   if (id === 's-add-credit')   populateCreditStudentSelect();
+  if (id === 's-a-led-control') openLedControl();
 }
 
 // Manually re-syncs all data from the sheet and re-renders whatever screen
@@ -2686,8 +2688,302 @@ function doRecordLogin() {
 }
 
 function logout() {
+  stopLedPolling();
   APP.currentFaculty = null;
   go('s-portal');
+}
+
+// ═══════════════════════════════════════════
+// FACULTY — LIVE LED SCOREBOARD
+// Shows the facilitator's table SOL points as a scrolling
+// LED-style marquee, meant to be displayed on the phone that
+// sits inside the SOL1 DIY cardboard laptop. Polls the sheet
+// on its own short interval (independent of loadAllData) so it
+// keeps updating live whenever an admin adds points to the
+// table from the Admin > Tables screen.
+// ═══════════════════════════════════════════
+let LED_POLL_INTERVAL = null;
+let LED_LAST_TOTAL    = null;
+
+// Client-side fallback used before the first successful ledConfig fetch —
+// mirrors LED_CONFIG_DEFAULTS on the Apps Script side.
+const LED_CONFIG_DEFAULTS_CLIENT = {
+  showName: true, showPoints: true, showRank: false, flashOnIncrease: true,
+  theme: 'yellow', customMessage: '', messageMode: 'append', targetTable: ''
+};
+
+// Swaps in the yellow/green/red/blue/white glow — shared by the faculty
+// board and the admin live preview.
+function applyLedTheme(screenEl, theme) {
+  if (!screenEl) return;
+  ['led-theme-yellow', 'led-theme-green', 'led-theme-red', 'led-theme-blue', 'led-theme-white']
+    .forEach(c => screenEl.classList.remove(c));
+  screenEl.classList.add(`led-theme-${theme || 'yellow'}`);
+}
+
+// "🥇 1ST PLACE" etc, based on the same table-credit totals the Admin
+// Table Leaderboard uses.
+function getLedRankText(tableNo) {
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))].filter(Boolean);
+  const ranked = tableNos
+    .map(t => ({ t, total: getTableCredits(t) }))
+    .sort((a, b) => b.total - a.total);
+  const idx = ranked.findIndex(x => x.t === String(tableNo));
+  if (idx === -1) return '';
+  const medals = ['🥇 1ST PLACE', '🥈 2ND PLACE', '🥉 3RD PLACE'];
+  return medals[idx] || `#${idx + 1} PLACE`;
+}
+
+// Builds the scrolling text for one table given the current admin-pushed
+// config. Shared by the faculty LED board and the Admin control preview.
+function buildLedText(tableNo, config) {
+  const total = getTableCredits(tableNo);
+  const parts = [];
+  if (config.showName)   parts.push(getTableLabel(tableNo).toUpperCase());
+  if (config.showPoints) parts.push(`${total} SOL POINTS`);
+  if (config.showRank) {
+    const rank = getLedRankText(tableNo);
+    if (rank) parts.push(rank);
+  }
+  let base = parts.length ? parts.join('  ★  ') : getTableLabel(tableNo).toUpperCase();
+
+  const msg = (config.customMessage || '').trim();
+  const targetsThisTable = !config.targetTable || String(config.targetTable) === String(tableNo);
+  if (msg && targetsThisTable) {
+    base = (config.messageMode === 'replace') ? msg : `${base}  ★  ${msg}`;
+  }
+  return { text: `${base}  ★  `, total };
+}
+
+async function openLedBoard() {
+  LED_LAST_TOTAL = null; // force a clean first render, no flash
+  go('s-f-led');
+  renderLedBanner(); // immediate render with whatever's cached
+  await refreshLedCredits(); // then pull the live totals + admin config
+  startLedPolling();
+  // Best-effort — most mobile browsers only allow fullscreen from a real
+  // user tap, so this quietly no-ops if the browser refuses it here.
+  const el = document.getElementById('led-screen');
+  if (el && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+}
+
+function closeLedBoard() {
+  stopLedPolling();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  go('s-faculty-home');
+}
+
+function toggleLedFullscreen() {
+  const el = document.getElementById('led-screen');
+  if (!el) return;
+  if (!document.fullscreenElement) {
+    (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {
+      showToast('⚠️ Fullscreen not supported on this device');
+    });
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function startLedPolling() {
+  stopLedPolling();
+  // 6s keeps the board feeling "live" without hammering Apps Script —
+  // this only re-fetches the CREDITS sheet, not the full data bundle.
+  LED_POLL_INTERVAL = setInterval(refreshLedCredits, 6000);
+}
+
+function stopLedPolling() {
+  if (LED_POLL_INTERVAL) { clearInterval(LED_POLL_INTERVAL); LED_POLL_INTERVAL = null; }
+}
+
+async function refreshLedCredits() {
+  try {
+    const [credRes, cfgRes] = await Promise.all([apiGet('credits'), apiGet('ledConfig')]);
+    if (credRes && credRes.success) APP.credits = credRes.data || [];
+    if (cfgRes && cfgRes.success && cfgRes.config) APP.ledConfig = cfgRes.config;
+    renderLedBanner();
+  } catch (err) {
+    console.error('refreshLedCredits error:', err);
+  }
+}
+
+function renderLedBanner() {
+  const tableNo = APP.currentFaculty?.["Table Assigned"] || "";
+  const config  = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
+  const { text, total } = buildLedText(tableNo, config);
+
+  const labelEl = document.getElementById('led-team-label');
+  if (labelEl) labelEl.textContent = getTableLabel(tableNo).toUpperCase();
+
+  const screen = document.getElementById('led-screen');
+  applyLedTheme(screen, config.theme);
+
+  const track  = document.getElementById('led-marquee-track');
+  const chunk1 = document.getElementById('led-chunk-1');
+  const chunk2 = document.getElementById('led-chunk-2');
+  if (!track || !chunk1 || !chunk2) return;
+
+  chunk1.textContent = text;
+  chunk2.textContent = text;
+
+  // Restart the scroll at a speed proportional to text length so a longer
+  // team name / higher point count doesn't fly by too fast, and so the
+  // loop (translateX -50%) stays seamless after the text changes.
+  requestAnimationFrame(() => {
+    const width    = chunk1.offsetWidth || 400;
+    const duration = Math.max(8, width / 55); // ~55px per second
+    track.style.animation = 'none';
+    void track.offsetWidth; // force reflow so the animation restarts cleanly
+    track.style.animation = `ledscroll ${duration}s linear infinite`;
+  });
+
+  const increased = LED_LAST_TOTAL !== null && total > LED_LAST_TOTAL && config.flashOnIncrease !== false;
+  if (increased) {
+    if (screen) {
+      screen.classList.add('led-flash');
+      setTimeout(() => screen.classList.remove('led-flash'), 1700);
+    }
+    if (navigator.vibrate) navigator.vibrate([70, 60, 70]);
+    showToast(`🎉 +${total - LED_LAST_TOTAL} SOL for ${getTableLabel(tableNo).toUpperCase()}!`);
+  }
+  LED_LAST_TOTAL = total;
+}
+
+// ═══════════════════════════════════════════
+// ADMIN — LED BOARD CONTROL
+// Pushes one shared config (Script Properties on the GAS side) that
+// every faculty phone's LED board polls every ~6s, so the admin
+// controls what shows on ALL boards (or just one table) from here.
+// ═══════════════════════════════════════════
+let LED_ADMIN_THEME    = 'yellow';
+let LED_ADMIN_MSG_MODE = 'append';
+
+function populateLedTargetSelect(selected) {
+  const sel = document.getElementById('led-cfg-target');
+  if (!sel) return;
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))]
+    .filter(Boolean).sort((a, b) => Number(a) - Number(b));
+  sel.innerHTML = '<option value="">All Tables</option>' +
+    tableNos.map(t => `<option value="${t}">${getTableLabel(t)}</option>`).join('');
+  sel.value = selected || '';
+}
+
+function selectLedTheme(theme) {
+  LED_ADMIN_THEME = theme;
+  document.querySelectorAll('.led-theme-swatch').forEach(btn => {
+    btn.style.borderColor = (btn.dataset.theme === theme) ? btn.style.color : '#333';
+  });
+  updateLedPreview();
+}
+
+function setLedMessageMode(mode) {
+  LED_ADMIN_MSG_MODE = mode;
+  const appendBtn  = document.getElementById('led-mode-append');
+  const replaceBtn = document.getElementById('led-mode-replace');
+  if (!appendBtn || !replaceBtn) return;
+  if (mode === 'replace') {
+    replaceBtn.style.background = '#c9960c'; replaceBtn.style.color = '#fff';
+    appendBtn.style.background  = '#fff';    appendBtn.style.color  = '#c9960c';
+  } else {
+    appendBtn.style.background  = '#c9960c'; appendBtn.style.color  = '#fff';
+    replaceBtn.style.background = '#fff';    replaceBtn.style.color = '#c9960c';
+  }
+  updateLedPreview();
+}
+
+function getLedConfigFromUI() {
+  return {
+    showName:        document.getElementById('led-cfg-showName')?.checked ?? true,
+    showPoints:      document.getElementById('led-cfg-showPoints')?.checked ?? true,
+    showRank:        document.getElementById('led-cfg-showRank')?.checked ?? false,
+    flashOnIncrease: document.getElementById('led-cfg-flash')?.checked ?? true,
+    theme:           LED_ADMIN_THEME,
+    customMessage:   document.getElementById('led-cfg-message')?.value || '',
+    messageMode:     LED_ADMIN_MSG_MODE,
+    targetTable:     document.getElementById('led-cfg-target')?.value || ''
+  };
+}
+
+function updateLedPreview() {
+  const config = getLedConfigFromUI();
+  const tableNos = [...new Set(APP.students.map(s => String(s["Table No"])))]
+    .filter(Boolean).sort((a, b) => Number(a) - Number(b));
+  const previewTable = config.targetTable || tableNos[0] || '';
+
+  const chunk1 = document.getElementById('led-preview-chunk-1');
+  const chunk2 = document.getElementById('led-preview-chunk-2');
+  const track  = document.getElementById('led-preview-track');
+  if (!chunk1 || !chunk2) return;
+
+  const text = previewTable ? buildLedText(previewTable, config).text : 'ADD A TABLE TO SEE A PREVIEW  ★  ';
+  chunk1.textContent = text;
+  chunk2.textContent = text;
+  applyLedTheme(document.getElementById('led-preview-screen'), config.theme);
+
+  if (track) {
+    requestAnimationFrame(() => {
+      const width    = chunk1.offsetWidth || 300;
+      const duration = Math.max(6, width / 55);
+      track.style.animation = 'none';
+      void track.offsetWidth;
+      track.style.animation = `ledscroll ${duration}s linear infinite`;
+    });
+  }
+}
+
+async function openLedControl() {
+  populateLedTargetSelect('');
+  selectLedTheme('yellow');
+  setLedMessageMode('append');
+  updateLedPreview();
+  try {
+    const res = await apiGet('ledConfig');
+    if (res && res.success && res.config) {
+      const cfg = res.config;
+      const setChecked = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+      setChecked('led-cfg-showName',   cfg.showName);
+      setChecked('led-cfg-showPoints', cfg.showPoints);
+      setChecked('led-cfg-showRank',   cfg.showRank);
+      setChecked('led-cfg-flash',      cfg.flashOnIncrease);
+      const msgEl = document.getElementById('led-cfg-message');
+      if (msgEl) msgEl.value = cfg.customMessage || '';
+      populateLedTargetSelect(cfg.targetTable || '');
+      selectLedTheme(cfg.theme || 'yellow');
+      setLedMessageMode(cfg.messageMode || 'append');
+    }
+  } catch (err) {
+    console.error('openLedControl error:', err);
+  }
+  updateLedPreview();
+}
+
+async function doSaveLedConfig() {
+  const config = getLedConfigFromUI();
+  const btn = document.querySelector('#s-a-led-control .btn-primary');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+    await apiPost({ action: 'setLedConfig', ...config });
+    showToast('📡 LED display settings pushed to every board');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to push settings'));
+    console.error('doSaveLedConfig error:', err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📡 Push to All LED Boards'; }
+  }
+}
+
+async function doClearLedMessage() {
+  try {
+    await apiPost({ action: 'clearLedMessage' });
+    const msgEl = document.getElementById('led-cfg-message');
+    if (msgEl) msgEl.value = '';
+    populateLedTargetSelect('');
+    updateLedPreview();
+    showToast('✅ LED message cleared from every board');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to clear message'));
+    console.error('doClearLedMessage error:', err);
+  }
 }
 
 function clearLoginFields(...ids) {
