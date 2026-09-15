@@ -2877,8 +2877,16 @@ async function openLedBoard() {
   startLedPolling();
   // Best-effort — most mobile browsers only allow fullscreen from a real
   // user tap, so this quietly no-ops if the browser refuses it here.
-  const el = document.getElementById('led-screen');
-  if (el && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  // IMPORTANT: fullscreen the whole page (<html>), not the inner
+  // #led-screen box. Fullscreening #led-screen directly promotes it out
+  // of its normal position in the DOM (the browser's top-layer), which
+  // drops the CSS rotate() transform inherited from its rotated ancestor
+  // (.led-fullscreen-overlay.led-force-landscape) — that's what was
+  // snapping the board back to plain portrait the moment Fullscreen
+  // engaged. Fullscreening documentElement instead just hides the
+  // browser chrome and leaves all of that layout/rotation untouched.
+  const rootEl = document.documentElement;
+  if (rootEl && rootEl.requestFullscreen) rootEl.requestFullscreen().catch(() => {});
 }
 
 function closeLedBoard() {
@@ -2907,10 +2915,11 @@ function toggleLedFlip() {
 }
 
 function toggleLedFullscreen() {
-  const el = document.getElementById('led-screen');
-  if (!el) return;
+  // See openLedBoard() — fullscreening the whole page (not #led-screen
+  // itself) keeps the CSS forced-landscape rotation intact.
+  const rootEl = document.documentElement;
   if (!document.fullscreenElement) {
-    (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {
+    (rootEl.requestFullscreen ? rootEl.requestFullscreen() : Promise.reject()).catch(() => {
       showToast('⚠️ Fullscreen not supported on this device');
     });
   } else {
