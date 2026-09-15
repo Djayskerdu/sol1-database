@@ -2802,17 +2802,25 @@ function showLedFrame(el, text) {
   if (!el || el.dataset.ledText === text) return;
   el.dataset.ledText = text;
 
+  // "N || SOL POINTS" frames render as a scoreboard: big number on top,
+  // smaller label underneath — this is what avoids the number clipping
+  // off the sides of the screen at large point totals (see buildLedFrames).
+  const scoreParts = text.split(' || ');
   // "TEAM NAME | TABLE X" frames are the ones long enough to run off the
   // edges of a phone screen in forced-landscape mode (see buildLedFrames).
   // Split those onto two centered lines — name on top, table on the
   // bottom — instead of clipping a single nowrap line.
   const parts = text.split(' | ');
-  if (parts.length === 2) {
+  if (scoreParts.length === 2) {
+    el.innerHTML = `<span class="led-score-num">${escapeHtml(scoreParts[0])}</span><span class="led-score-label">${escapeHtml(scoreParts[1])}</span>`;
+    el.classList.add('led-chunk-split', 'led-chunk-score');
+  } else if (parts.length === 2) {
     el.innerHTML = `<span class="led-line">${escapeHtml(parts[0])}</span><span class="led-line led-line-2">${escapeHtml(parts[1])}</span>`;
     el.classList.add('led-chunk-split');
+    el.classList.remove('led-chunk-score');
   } else {
     el.textContent = text;
-    el.classList.remove('led-chunk-split');
+    el.classList.remove('led-chunk-split', 'led-chunk-score');
   }
 
   el.classList.remove('led-text-in');
@@ -2850,7 +2858,7 @@ function buildLedFrames(tableNo, config) {
   const total = getTableCredits(tableNo);
   const frames = [];
   if (config.showName)   frames.push(getTableLabel(tableNo).toUpperCase());
-  if (config.showPoints) frames.push(`${total} SOL POINTS`);
+  if (config.showPoints) frames.push(`${total} || SOL POINTS`);
   if (config.showRank) {
     const rank = getLedRankText(tableNo);
     if (rank) frames.push(rank);
