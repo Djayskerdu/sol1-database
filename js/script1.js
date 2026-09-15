@@ -1,7 +1,7 @@
 // ╔═══════════════════════════════════════════════════════════╗
 // ║  STEP 1 — PASTE YOUR GAS WEB APP URL BELOW               ║
 // ╚═══════════════════════════════════════════════════════════╝
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxdRDQDjRjyY9YlQ8MZuKDcCZVrjIUSa6VP272FoY0GEkMDGR2MG_0RuaPESUMIm_wWvw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby0pzMuQyA0Hp5xZ1eyMr6obJ5gRaOlOjD6I8pIK1XGvKDlydamCHUuKBC6oKJ0bkEhoQ/exec';
 
 // ─── QR SECURITY TOKEN ───────────────────────────────────────
 // Deliberately a different secret/prefix from the Lifeclass app so a
