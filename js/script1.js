@@ -25,13 +25,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   }
 }
 
-async function apiGet(action, params = "") {
+async function apiGet(action, params = "", timeoutMs) {
   // Cache-bust: Google Apps Script Web App GET responses can be cached by
   // Google's edge servers, so a fresh timestamp param + no-store ensures
   // we always get the live sheet data instead of a stale cached copy.
   const cacheBust = `&_t=${Date.now()}`;
   const url = `${GAS_URL}?action=${action}${params}${cacheBust}`;
-  const res = await fetchWithTimeout(url, { cache: 'no-store' });
+  const res = await fetchWithTimeout(url, { cache: 'no-store' }, timeoutMs);
   if (!res.ok) throw new Error(`HTTP ${res.status} for action=${action}`);
   return await res.json();
 }
@@ -340,7 +340,20 @@ async function loadAllData() {
   let usedFallback = false;
   let missingSheets = [];
   try {
-    const res = await apiGet('allData');
+    // Give this one generous room (30s) since it's a single request doing
+    // real work server-side — a slow-but-working response is much better
+    // than giving up early and triggering the 13-call fallback below,
+    // which only adds MORE concurrent load on top of whatever already
+    // made this one slow.
+    let res;
+    try {
+      res = await apiGet('allData', '', 30000);
+    } catch (firstErr) {
+      // One quiet retry before falling back — covers the common case of
+      // a momentary pile-up (several devices syncing at once) that's
+      // already clearing up by the time we try again.
+      res = await apiGet('allData', '', 30000);
+    }
     if (!res || res.success === false || !res.data) throw new Error('allData not available');
     bundle = res.data;
     missingSheets = res.missingSheets || [];
