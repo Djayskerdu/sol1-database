@@ -67,6 +67,7 @@ input, select, button, textarea { font-family: var(--font); }
 .pb-f { background: linear-gradient(135deg, #d6336c, #f06595); }
 .pb-a { background: linear-gradient(135deg, #e64980, #f783ac); }
 .pb-r { background: linear-gradient(135deg, #ae3ec9, #da77f2); }
+.pb-g { background: linear-gradient(135deg, #f08c00, #ffd43b); }
 .pb-gs { background: linear-gradient(135deg, #4a3800, #7a5e00); }
 
 /* LOGIN */
