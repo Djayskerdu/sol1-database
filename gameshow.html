@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SCHOOL OF LEADERS 2: Amen Alert! 🚨</title>
+<title>SCHOOL OF LEADERS 1: Amen Alert! 🚨</title>
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --red:    #e53935;
@@ -1019,6 +1022,502 @@
     #leaderboard-panel { width: 100%; border-top: 1px solid rgba(255,255,255,0.07); transform: translateY(20px); }
     #leaderboard-panel.visible { transform: translateY(0); }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     ARCADE SKIN  ▸ SOL1 LED WALL
+     Purely visual. Overrides the presentation screen + overlays.
+     Delete this whole block to return to the old game-show look.
+     ══════════════════════════════════════════════════════════ */
+
+  :root {
+    --arc-void:    #04060e;
+    --arc-navy:    #0c1c33;
+    --arc-cyan:    #2ED2F7;
+    --arc-yellow:  #FFD93D;
+    --arc-magenta: #FF2E88;
+    --arc-lime:    #45F882;
+    --arc-red:     #FF4040;
+    --arc-pixel:   'Press Start 2P', 'Courier New', ui-monospace, monospace;
+    --arc-body:    'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* ── The cabinet screen ──────────────────────────────────── */
+  #s-presentation {
+    background:
+      radial-gradient(ellipse 120% 80% at 50% 110%, #16345c 0%, transparent 62%),
+      radial-gradient(ellipse at 50% -10%, #1a0c3c 0%, transparent 55%),
+      var(--arc-void);
+  }
+
+  /* Scanlines + CRT vignette, laid over everything on the wall */
+  #s-presentation::after {
+    content: '';
+    position: fixed; inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.26) 0px,
+        rgba(0,0,0,0.26) 1px,
+        transparent 1px,
+        transparent 4px
+      ),
+      radial-gradient(ellipse 88% 78% at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+    mix-blend-mode: multiply;
+  }
+  /* A second pass for the phosphor bloom — additive, very subtle */
+  #s-presentation::before {
+    content: '';
+    position: fixed; inset: 0;
+    z-index: 59;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to right,
+      rgba(46,210,247,0.030) 0px,
+      rgba(255,46,136,0.030) 1px,
+      transparent 2px,
+      transparent 3px
+    );
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #s-presentation::after { background: radial-gradient(ellipse 88% 78% at 50% 50%, transparent 58%, rgba(0,0,0,0.5) 100%); }
+  }
+
+  /* Pixel sparkles instead of round glitter */
+  #s-presentation .gs-sparkle { border-radius: 0 !important; }
+
+  /* Neon columns replacing the spotlight rays */
+  #s-presentation .gs-ray {
+    width: 6px;
+    background: linear-gradient(to top, transparent, rgba(46,210,247,0.22), transparent);
+    border-radius: 0;
+    filter: blur(0.5px);
+  }
+
+  /* ── Marquee header ──────────────────────────────────────── */
+  #s-presentation .pres-header {
+    padding: 10px 18px;
+    background: linear-gradient(180deg, rgba(12,28,51,0.92), rgba(4,6,14,0.5));
+    border-bottom: 3px solid var(--arc-cyan);
+    box-shadow: 0 0 22px rgba(46,210,247,0.35);
+    align-items: center;
+  }
+  #s-presentation .pres-quiz-title {
+    font-family: var(--arc-pixel);
+    font-size: clamp(11px, 1.2vw, 15px);
+    line-height: 1.5;
+    color: var(--arc-yellow);
+    text-shadow: 2px 2px 0 #7a4b00, 0 0 14px rgba(255,217,61,0.5);
+    letter-spacing: 0;
+  }
+  #s-presentation .pres-quiz-sub {
+    font-family: var(--arc-pixel);
+    font-size: clamp(7px, 0.75vw, 9px);
+    color: var(--arc-cyan);
+    line-height: 1.7;
+    margin-top: 5px;
+    text-shadow: 0 0 10px rgba(46,210,247,0.6);
+  }
+  #s-presentation .pres-header > div:last-child {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(9px, 1vw, 12px) !important;
+    color: var(--arc-lime) !important;
+    text-shadow: 0 0 12px rgba(69,248,130,0.65);
+    letter-spacing: 0;
+  }
+  #s-presentation .pres-header .back-btn {
+    border-radius: 0;
+    border: 2px solid rgba(255,64,64,0.6);
+    background: rgba(255,64,64,0.14);
+    color: var(--arc-red);
+    font-family: var(--arc-pixel);
+    font-size: 12px;
+  }
+  #s-presentation #bgm-toggle-btn,
+  #s-presentation #fullscreen-btn {
+    border-radius: 0 !important;
+    border: 2px solid rgba(46,210,247,0.4) !important;
+    background: rgba(46,210,247,0.08) !important;
+    color: var(--arc-cyan) !important;
+    font-family: var(--arc-pixel) !important;
+    font-size: 8px !important;
+    padding: 8px 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* ── Player slots (tables) ───────────────────────────────── */
+  #s-presentation .tables-strip { gap: 10px; margin-bottom: 18px; }
+  #s-presentation .table-chip {
+    border-radius: 0;
+    border-width: 3px;
+    border-style: solid;
+    padding: 12px 22px;
+    min-width: 140px; min-height: 56px;
+    /* pixel-notched corners */
+    clip-path: polygon(
+      8px 0, calc(100% - 8px) 0, 100% 8px,
+      100% calc(100% - 8px), calc(100% - 8px) 100%,
+      8px 100%, 0 calc(100% - 8px), 0 8px
+    );
+  }
+  #s-presentation .table-chip .tc-num {
+    font-family: var(--arc-pixel);
+    font-size: clamp(8px, 0.9vw, 11px) !important;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+  #s-presentation .table-chip.buzzed {
+    animation: arc-buzz 0.28s steps(1) infinite alternate;
+  }
+  @keyframes arc-buzz {
+    from { filter: brightness(1) drop-shadow(0 0 0 rgba(255,217,61,0)); }
+    to   { filter: brightness(1.5) drop-shadow(0 0 14px var(--arc-yellow)) drop-shadow(0 0 30px rgba(255,217,61,0.85)); }
+  }
+  #s-presentation .table-chip.correct {
+    filter: drop-shadow(0 0 12px var(--arc-lime)) drop-shadow(0 0 26px rgba(69,248,130,0.5));
+  }
+  #s-presentation .table-chip.wrong { filter: saturate(0.3); }
+
+  /* ── Stage label ─────────────────────────────────────────── */
+  #s-presentation .pres-q-num {
+    font-family: var(--arc-pixel);
+    font-size: clamp(10px, 1.1vw, 14px);
+    color: var(--arc-magenta);
+    letter-spacing: 0;
+    text-shadow: 0 0 16px rgba(255,46,136,0.75);
+    margin-bottom: 14px;
+  }
+  #s-presentation .pres-q-num::before { content: '▶ '; color: var(--arc-yellow); }
+  #s-presentation .pres-q-num::after  { content: ' ◀'; color: var(--arc-yellow); }
+
+  /* ── Question panel: a CRT inside the CRT ────────────────── */
+  #s-presentation .pres-q-text {
+    font-family: var(--arc-body);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border-radius: 0;
+    border: 3px solid var(--arc-cyan);
+    background:
+      linear-gradient(180deg, rgba(46,210,247,0.10), rgba(4,6,14,0.72));
+    /* clip-path would cut box-shadow, so the bloom is a filter */
+    filter:
+      drop-shadow(0 0 14px rgba(46,210,247,0.55))
+      drop-shadow(0 0 42px rgba(46,210,247,0.30));
+    box-shadow: inset 0 0 60px rgba(46,210,247,0.12);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.6);
+    padding: 30px 28px;
+    clip-path: polygon(
+      14px 0, calc(100% - 14px) 0, 100% 14px,
+      100% calc(100% - 14px), calc(100% - 14px) 100%,
+      14px 100%, 0 calc(100% - 14px), 0 14px
+    );
+  }
+
+  /* ── Answer keys: real arcade buttons ────────────────────── */
+  #s-presentation .pres-choices { gap: 16px; margin-top: 22px; }
+  #s-presentation .pres-choice {
+    border-radius: 0;
+    border: 3px solid rgba(255,255,255,0.22);
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+    box-shadow: inset 0 3px 0 rgba(255,255,255,0.16), inset 0 -6px 0 rgba(0,0,0,0.42);
+    padding: 18px 20px;
+    min-height: 86px;
+    transition: transform 0.12s steps(2), box-shadow 0.2s, background 0.2s, border-color 0.2s;
+    clip-path: polygon(
+      10px 0, calc(100% - 10px) 0, 100% 10px,
+      100% calc(100% - 10px), calc(100% - 10px) 100%,
+      10px 100%, 0 calc(100% - 10px), 0 10px
+    );
+  }
+  #s-presentation .pres-choice .choice-ltr {
+    border-radius: 50%;
+    width: 50px; height: 50px;
+    font-family: var(--arc-pixel);
+    font-size: 17px;
+    border: 3px solid rgba(255,255,255,0.65);
+    box-shadow:
+      inset 0 -4px 0 rgba(0,0,0,0.42),
+      inset 0 3px 0 rgba(255,255,255,0.35),
+      0 0 18px currentColor;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.55);
+  }
+  #s-presentation .pres-choice .choice-txt {
+    font-family: var(--arc-body);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  /* Each key wears the colour of its button cap */
+  #s-presentation .pres-choice:nth-child(1) {
+    background: linear-gradient(180deg, rgba(229,57,53,0.34), rgba(229,57,53,0.10));
+    border-color: rgba(255,96,92,0.8);
+  }
+  #s-presentation .pres-choice:nth-child(2) {
+    background: linear-gradient(180deg, rgba(41,140,235,0.34), rgba(41,140,235,0.10));
+    border-color: rgba(88,172,255,0.8);
+  }
+  #s-presentation .pres-choice:nth-child(3) {
+    background: linear-gradient(180deg, rgba(56,180,86,0.34), rgba(56,180,86,0.10));
+    border-color: rgba(96,222,130,0.8);
+  }
+  #s-presentation .pres-choice:nth-child(4) {
+    background: linear-gradient(180deg, rgba(249,168,37,0.34), rgba(249,168,37,0.10));
+    border-color: rgba(255,200,84,0.8);
+  }
+  #s-presentation .pres-choice:nth-child(5) {
+    background: linear-gradient(180deg, rgba(150,80,220,0.34), rgba(150,80,220,0.10));
+    border-color: rgba(190,130,255,0.8);
+  }
+  #s-presentation .pres-choice:nth-child(6) {
+    background: linear-gradient(180deg, rgba(0,180,200,0.34), rgba(0,180,200,0.10));
+    border-color: rgba(70,225,240,0.8);
+  }
+
+  #s-presentation .pres-choice.correct {
+    background: linear-gradient(180deg, rgba(69,248,130,0.34), rgba(69,248,130,0.12));
+    border-color: var(--arc-lime);
+    box-shadow: inset 0 3px 0 rgba(255,255,255,0.22), inset 0 -6px 0 rgba(0,0,0,0.42);
+    filter: drop-shadow(0 0 16px rgba(69,248,130,0.75)) drop-shadow(0 0 36px rgba(69,248,130,0.45));
+    animation: arc-flash 0.3s steps(1) 6;
+  }
+  @keyframes arc-flash {
+    from { filter: brightness(1); }
+    to   { filter: brightness(1.7); }
+  }
+  #s-presentation .pres-choice.wrong {
+    opacity: 0.32;
+    filter: saturate(0.25);
+    transform: translateY(6px);
+    box-shadow: none;
+    filter: saturate(0.2) brightness(0.7);
+    border-color: rgba(255,255,255,0.12);
+  }
+  #s-presentation .pres-choice.highlight {
+    background: linear-gradient(180deg, rgba(255,217,61,0.28), rgba(255,217,61,0.08));
+    border-color: var(--arc-yellow);
+    box-shadow: inset 0 3px 0 rgba(255,255,255,0.22), inset 0 -6px 0 rgba(0,0,0,0.42);
+    filter: drop-shadow(0 0 16px rgba(255,217,61,0.7));
+  }
+
+  /* ── Host control panel ──────────────────────────────────── */
+  #s-presentation .host-btn {
+    border-radius: 0;
+    font-family: var(--arc-pixel);
+    font-size: 9px;
+    line-height: 1.6;
+    padding: 14px 8px;
+    border: 2px solid rgba(0,0,0,0.5);
+    box-shadow: 0 5px 0 rgba(0,0,0,0.6);
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.35);
+  }
+  #s-presentation .host-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+  #s-presentation #auto-advance-msg {
+    font-family: var(--arc-pixel) !important;
+    font-size: 9px !important;
+    color: var(--arc-cyan) !important;
+    line-height: 1.8 !important;
+  }
+
+  /* ── PERFECT! / MISS! flash ──────────────────────────────── */
+  #result-banner.correct-bg { background: rgba(6,48,22,0.985); }
+  #result-banner.wrong-bg   { background: rgba(66,5,12,0.985); }
+  #result-banner .rb-title {
+    font-family: var(--arc-pixel);
+    font-size: clamp(22px, 4.5vw, 46px);
+    line-height: 1.4;
+    letter-spacing: 0;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.6), -2px 0 0 var(--arc-magenta), 2px 0 0 var(--arc-cyan);
+    animation: arc-chroma 0.6s steps(2) infinite alternate;
+  }
+  @keyframes arc-chroma {
+    from { text-shadow: 3px 3px 0 rgba(0,0,0,0.6), -2px 0 0 var(--arc-magenta), 2px 0 0 var(--arc-cyan); }
+    to   { text-shadow: 3px 3px 0 rgba(0,0,0,0.6), -3px 0 0 var(--arc-cyan), 3px 0 0 var(--arc-magenta); }
+  }
+  #result-banner .rb-sub {
+    font-family: var(--arc-pixel);
+    font-size: clamp(10px, 1.4vw, 14px);
+    color: var(--arc-yellow);
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+  #result-banner .rb-icon { filter: drop-shadow(0 0 22px rgba(255,255,255,0.45)); }
+  #rb-countdown-msg {
+    font-family: var(--arc-pixel) !important;
+    font-size: 9px !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0 !important;
+  }
+  #rb-countdown-num {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(40px, 7vw, 64px) !important;
+    text-shadow: 4px 4px 0 rgba(0,0,0,0.5), 0 0 38px rgba(255,217,61,0.75) !important;
+  }
+
+  /* ── Attract-mode intro overlay ──────────────────────────── */
+  #pres-intro-overlay {
+    background:
+      repeating-linear-gradient(to bottom, rgba(0,0,0,0.3) 0 1px, transparent 1px 4px),
+      radial-gradient(ellipse 120% 80% at 50% 108%, #16345c 0%, transparent 60%),
+      radial-gradient(ellipse at center, #14063a 0%, #04060e 100%) !important;
+  }
+  #pres-intro-label {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(9px, 1.1vw, 12px) !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0 !important;
+    color: var(--arc-cyan) !important;
+    text-shadow: 0 0 16px rgba(46,210,247,0.7);
+  }
+  #pres-intro-msg {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(15px, 3vw, 30px) !important;
+    line-height: 1.75 !important;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.65), 0 0 26px rgba(46,210,247,0.4);
+  }
+  #pres-intro-qbox {
+    border-radius: 0 !important;
+    border: 3px solid var(--arc-cyan) !important;
+    background: linear-gradient(180deg, rgba(46,210,247,0.10), rgba(4,6,14,0.75)) !important;
+    box-shadow: 0 0 0 6px rgba(4,6,14,0.9), 0 0 0 8px rgba(46,210,247,0.3), 0 0 46px rgba(46,210,247,0.3);
+    clip-path: polygon(
+      16px 0, calc(100% - 16px) 0, 100% 16px,
+      100% calc(100% - 16px), calc(100% - 16px) 100%,
+      16px 100%, 0 calc(100% - 16px), 0 16px
+    );
+  }
+  #pres-intro-qlabel {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(9px, 1.2vw, 13px) !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0 !important;
+    color: var(--arc-magenta) !important;
+    text-shadow: 0 0 16px rgba(255,46,136,0.7);
+  }
+  #pres-intro-qtext {
+    font-family: var(--arc-body) !important;
+    font-weight: 700 !important;
+  }
+  #pres-intro-qtimer {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(9px, 1.1vw, 12px) !important;
+    line-height: 1.8 !important;
+    color: var(--arc-yellow) !important;
+  }
+  #pres-intro-countdown,
+  #pres-chance-countdown {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(56px, 14vw, 120px) !important;
+    text-shadow: 6px 6px 0 rgba(0,0,0,0.5), 0 0 60px rgba(255,217,61,0.8) !important;
+  }
+  #pres-chance-overlay {
+    background:
+      repeating-linear-gradient(to bottom, rgba(0,0,0,0.3) 0 1px, transparent 1px 4px),
+      radial-gradient(ellipse at center, #062240 0%, #04060e 100%) !important;
+  }
+  #pres-chance-msg {
+    font-family: var(--arc-pixel) !important;
+    font-size: clamp(14px, 2.6vw, 26px) !important;
+    line-height: 1.8 !important;
+  }
+
+  /* ── "Get ready" between stages ──────────────────────────── */
+  #nqo-label {
+    font-family: var(--arc-pixel);
+    font-size: clamp(10px, 1.3vw, 14px);
+    line-height: 1.8;
+    letter-spacing: 0;
+    color: var(--arc-cyan);
+  }
+  #nqo-num {
+    font-family: var(--arc-pixel);
+    text-shadow: 6px 6px 0 rgba(0,0,0,0.5), 0 0 55px rgba(255,217,61,0.75);
+  }
+
+  /* ── HIGH SCORE reveal ───────────────────────────────────── */
+  #wro-line1, #wro-suspense {
+    font-family: var(--arc-pixel);
+    font-size: clamp(11px, 1.8vw, 18px);
+    line-height: 1.8;
+    letter-spacing: 0;
+  }
+  #wro-winner-name {
+    font-family: var(--arc-pixel);
+    font-size: clamp(20px, 4.5vw, 46px);
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-shadow: 4px 4px 0 rgba(0,0,0,0.6), 0 0 40px rgba(255,217,61,0.7);
+  }
+  #wro-winner-pts {
+    font-family: var(--arc-pixel);
+    font-size: clamp(11px, 1.8vw, 18px);
+    line-height: 1.8;
+    color: var(--arc-lime);
+  }
+  #wro-cd-msg {
+    font-family: var(--arc-pixel) !important;
+    font-size: 9px !important;
+    line-height: 1.8 !important;
+    letter-spacing: 0 !important;
+  }
+  #wro-cd-num {
+    font-family: var(--arc-pixel) !important;
+    text-shadow: 5px 5px 0 rgba(0,0,0,0.5), 0 0 45px rgba(255,217,61,0.8) !important;
+  }
+  .wro-star { border-radius: 0 !important; }
+
+  /* ── RANKING screen ──────────────────────────────────────── */
+  #s-final-scores {
+    background:
+      radial-gradient(ellipse 120% 80% at 50% 110%, #16345c 0%, transparent 62%),
+      var(--arc-void);
+  }
+  .podium-title {
+    font-family: var(--arc-pixel);
+    font-size: clamp(14px, 2.4vw, 26px);
+    line-height: 1.6;
+    letter-spacing: 0;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.6), 0 0 30px rgba(255,217,61,0.6);
+  }
+  .podium-quiz-sub {
+    font-family: var(--arc-pixel);
+    font-size: clamp(8px, 1vw, 11px);
+    line-height: 1.8;
+    color: var(--arc-cyan);
+  }
+  .podium-name  { font-family: var(--arc-pixel); font-size: clamp(8px, 1vw, 11px); line-height: 1.7; letter-spacing: 0; }
+  .podium-pts   { font-family: var(--arc-pixel); font-size: clamp(8px, 1vw, 11px); line-height: 1.7; color: var(--arc-lime); }
+  .podium-block {
+    border-radius: 0 !important;
+    border: 3px solid rgba(255,255,255,0.28);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.6), inset 0 3px 0 rgba(255,255,255,0.18);
+  }
+  #lb-title { font-family: var(--arc-pixel); font-size: clamp(10px, 1.3vw, 14px); line-height: 1.7; }
+  #lb-sub   { font-family: var(--arc-pixel); font-size: clamp(7px, 0.85vw, 9px); line-height: 1.9; color: var(--arc-cyan); }
+  #leaderboard-panel {
+    border-radius: 0 !important;
+    border: 3px solid rgba(46,210,247,0.45) !important;
+    box-shadow: 0 0 34px rgba(46,210,247,0.22);
+  }
+  .lb-row {
+    border-radius: 0 !important;
+    border-width: 2px !important;
+  }
+  .lb-table-name { font-family: var(--arc-pixel); font-size: clamp(8px, 0.95vw, 10px); line-height: 1.7; }
+  .lb-pts-label  { font-family: var(--arc-pixel); font-size: 7px; line-height: 1.9; }
+  .lb-score      { font-family: var(--arc-pixel); }
+  .lb-score span { font-family: var(--arc-pixel); font-size: 7px !important; }
+  .lb-rank-badge { font-family: var(--arc-pixel); }
+  .lb-bar-wrap   { border-radius: 0 !important; }
+  .lb-bar-fill   { border-radius: 0 !important; }
+  .confetti-piece { border-radius: 0 !important; }
+
+  /* ── Phone-sized wall / mirror view ──────────────────────── */
+  @media (max-width: 720px) {
+    #s-presentation .pres-choices { grid-template-columns: 1fr; }
+    #s-presentation .pres-q-text { padding: 20px 16px; }
+    #s-presentation .table-chip { min-width: 108px; padding: 10px 14px; }
+  }
+
 </style>
 </head>
 <body>
@@ -1034,8 +1533,8 @@
 <div class="screen active" id="s-portal">
   <div class="portal-hero">
     <div class="logo">🚨</div>
-    <h1>SCHOOL OF LEADERS 2: <span>IPRESS MO NAYAN!</span></h1>
-    <p>Interactive Game Show System</p>
+    <h1>SCHOOL OF LEADERS 1: <span>IPRESS MO NAYAN!</span></h1>
+    <p>Dream • Build • Lead — Interactive Game Show System</p>
   </div>
   <div class="portal-cards">
     <div class="portal-card card-host" onclick="go('s-host-login')">
@@ -1053,7 +1552,7 @@
     <div class="portal-card card-back" onclick="window.location='index.html'">
       <div class="card-icon">↩️</div>
       <h3>Back to Main App</h3>
-      <p>Return to the Lifeclass Dashboard</p>
+      <p>Return to the SOL 1 Dashboard</p>
     </div>
   </div>
 </div>
@@ -4032,84 +4531,186 @@ function startGameShowBg() {
   const sparksEl = document.getElementById('gs-sparkles');
   if (!canvas) return;
 
-  // ── Canvas: slow drifting orbs / glow pulses ──
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
+  // ══ ARCADE BACKDROP: neon grid floor + pixel starfield + invaders ══
   const ctx = canvas.getContext('2d');
+  let W, H, HORIZON;
+  function sizeCanvas() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    HORIZON = H * 0.58;
+  }
+  sizeCanvas();
+  window.addEventListener('resize', sizeCanvas);
 
-  const orbs = Array.from({ length: 12 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    r: 60 + Math.random() * 120,
-    vx: (Math.random() - 0.5) * 0.4,
-    vy: (Math.random() - 0.5) * 0.4,
-    hue: [260, 280, 220, 45, 320][Math.floor(Math.random() * 5)],
-    phase: Math.random() * Math.PI * 2,
-    speed: 0.008 + Math.random() * 0.012
+  const reduced = window.matchMedia &&
+                  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Pixel stars above the horizon
+  const stars = Array.from({ length: 90 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * (H * 0.58),
+    s: Math.random() < 0.8 ? 2 : 3,
+    tw: Math.random() * Math.PI * 2,
+    sp: 0.02 + Math.random() * 0.05,
+    c: ['#2ED2F7', '#FFD93D', '#FF2E88', '#ffffff', '#45F882'][Math.floor(Math.random() * 5)]
   }));
 
-  function drawBg(t) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    orbs.forEach(o => {
-      o.phase += o.speed;
-      o.x += o.vx; o.y += o.vy;
-      if (o.x < -o.r) o.x = canvas.width + o.r;
-      if (o.x > canvas.width + o.r) o.x = -o.r;
-      if (o.y < -o.r) o.y = canvas.height + o.r;
-      if (o.y > canvas.height + o.r) o.y = -o.r;
-      const alpha = 0.04 + 0.03 * Math.sin(o.phase);
-      const grad = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
-      grad.addColorStop(0, `hsla(${o.hue},100%,60%,${alpha})`);
-      grad.addColorStop(1, `hsla(${o.hue},100%,40%,0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
-      ctx.fill();
+  // Classic 11x8 invader sprite
+  const INVADER = [
+    '00100000100',
+    '00010001000',
+    '00111111100',
+    '01101110110',
+    '11111111111',
+    '10111111101',
+    '10100000101',
+    '00011011000'
+  ];
+  const sprites = Array.from({ length: 5 }, (_, i) => ({
+    x: Math.random() * W,
+    y: 30 + Math.random() * (H * 0.20),   // keep them clear of the question panel
+    px: 2 + Math.floor(Math.random() * 2),
+    vx: (Math.random() < 0.5 ? -1 : 1) * (0.18 + Math.random() * 0.3),
+    bob: Math.random() * Math.PI * 2,
+    c: ['#2ED2F7', '#FF2E88', '#FFD93D', '#45F882'][i % 4]
+  }));
+
+  function drawInvader(s) {
+    ctx.fillStyle = s.c;
+    for (let r = 0; r < INVADER.length; r++) {
+      for (let c = 0; c < INVADER[r].length; c++) {
+        if (INVADER[r][c] === '1') {
+          ctx.fillRect(s.x + c * s.px, s.y + r * s.px, s.px, s.px);
+        }
+      }
+    }
+  }
+
+  let scroll = 0;
+  function drawBg() {
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Starfield ──
+    stars.forEach(st => {
+      st.tw += st.sp;
+      const a = 0.35 + 0.45 * Math.sin(st.tw);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = st.c;
+      ctx.fillRect(st.x, st.y, st.s, st.s);
     });
+    ctx.globalAlpha = 1;
+
+    // ── Drifting invaders ──
+    ctx.globalAlpha = 0.22;
+    sprites.forEach(s => {
+      if (!reduced) {
+        s.x += s.vx;
+        s.bob += 0.012;
+      }
+      if (s.x > W + 40) s.x = -40;
+      if (s.x < -40) s.x = W + 40;
+      const saved = s.y;
+      s.y = saved + Math.sin(s.bob) * 6;
+      drawInvader(s);
+      s.y = saved;
+    });
+    ctx.globalAlpha = 1;
+
+    // ── Horizon glow ──
+    const glow = ctx.createLinearGradient(0, HORIZON - 90, 0, HORIZON + 10);
+    glow.addColorStop(0, 'rgba(255,46,136,0)');
+    glow.addColorStop(1, 'rgba(255,46,136,0.20)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, HORIZON - 90, W, 100);
+
+    ctx.strokeStyle = 'rgba(255,46,136,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, HORIZON);
+    ctx.lineTo(W, HORIZON);
+    ctx.stroke();
+
+    // ── Perspective grid floor ──
+    const depth = H - HORIZON;
+    ctx.strokeStyle = 'rgba(46,210,247,0.30)';
+    ctx.lineWidth = 1.5;
+
+    // Horizontal lines, spaced by perspective, scrolling toward the viewer
+    if (!reduced) scroll = (scroll + 0.0022) % 1;
+    for (let i = 0; i < 18; i++) {
+      const t = ((i / 18) + scroll) % 1;
+      const y = HORIZON + depth * (t * t);
+      ctx.globalAlpha = Math.min(1, t * 2.2) * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+
+    // Vertical lines converging on the vanishing point
+    ctx.globalAlpha = 0.28;
+    const vpX = W / 2;
+    for (let i = -14; i <= 14; i++) {
+      ctx.beginPath();
+      ctx.moveTo(vpX + i * 14, HORIZON);
+      ctx.lineTo(vpX + i * (W / 5), H);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
     _gsBgAnimId = requestAnimationFrame(drawBg);
   }
   _gsBgAnimId = requestAnimationFrame(drawBg);
   canvas.classList.add('active');
 
-  // ── Rays: spotlight beams from bottom ──
+  // ── Neon light columns (reuses the old ray elements) ──
   raysEl.innerHTML = '';
-  const rayCount = 10;
+  const rayCount = 8;
+  const rayColors = [
+    'rgba(46,210,247,0.22)',
+    'rgba(255,46,136,0.20)',
+    'rgba(255,217,61,0.18)'
+  ];
   for (let i = 0; i < rayCount; i++) {
     const ray = document.createElement('div');
     ray.className = 'gs-ray';
-    const angle = -40 + (80 / (rayCount - 1)) * i;
-    const h = 40 + Math.random() * 55;
+    const angle = -32 + (64 / (rayCount - 1)) * i;
+    const h = 42 + Math.random() * 45;
+    const col = rayColors[i % rayColors.length];
     ray.style.cssText = `
-      left: ${10 + (80 / (rayCount - 1)) * i}%;
+      left: ${8 + (84 / (rayCount - 1)) * i}%;
       height: ${h}vh;
       --ra: ${angle}deg;
       transform: rotate(${angle}deg);
-      animation-delay: ${(i * 0.4).toFixed(1)}s;
+      background: linear-gradient(to top, transparent, ${col}, transparent);
+      animation-delay: ${(i * 0.45).toFixed(1)}s;
       animation-duration: ${(4 + Math.random() * 3).toFixed(1)}s;
-      opacity: 0.5;
+      opacity: 0.6;
     `;
     raysEl.appendChild(ray);
   }
   raysEl.classList.add('active');
 
-  // ── Sparkles: floating dots/stars rising up ──
+  // ── Rising pixel bits ──
   sparksEl.innerHTML = '';
-  const sparkColors = ['#FFD700','#fff','#ce93d8','#4FC3F7','#81C784','#FFB74D','#FF6B6B'];
-  for (let i = 0; i < 28; i++) {
+  const sparkColors = ['#FFD93D', '#2ED2F7', '#FF2E88', '#45F882', '#ffffff'];
+  for (let i = 0; i < 26; i++) {
     const sp = document.createElement('div');
     sp.className = 'gs-sparkle';
-    const size = 3 + Math.random() * 5;
-    const dur  = 8 + Math.random() * 14;
+    const size = [3, 4, 6][Math.floor(Math.random() * 3)];
+    const dur  = 9 + Math.random() * 13;
     const delay = Math.random() * 12;
+    const col = sparkColors[Math.floor(Math.random() * sparkColors.length)];
     sp.style.cssText = `
       left: ${Math.random() * 100}%;
-      bottom: ${Math.random() * 20}%;
+      bottom: ${Math.random() * 18}%;
       width: ${size}px; height: ${size}px;
-      background: ${sparkColors[Math.floor(Math.random() * sparkColors.length)]};
+      background: ${col};
+      color: ${col};
       animation-duration: ${dur}s;
       animation-delay: ${delay}s;
-      opacity: 0.7;
-      box-shadow: 0 0 ${size * 2}px currentColor;
+      opacity: 0.75;
+      box-shadow: 0 0 ${size * 2.5}px currentColor;
     `;
     sparksEl.appendChild(sp);
   }
