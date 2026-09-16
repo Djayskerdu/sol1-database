@@ -218,6 +218,18 @@ function doPost(e) {
         PropertiesService.getScriptProperties().deleteProperty("GS_GAME_STATE");
         return output({ success: true });
 
+      // ── GAME SHOW QUIZZES (cross-device sync) ──
+      // Whole quiz list is saved/loaded as one JSON blob, same approach as
+      // GS_GAME_STATE above, so quizzes made on one device show up on any
+      // other device/browser that opens the Game Show host screen.
+      case "saveQuizzes":
+        PropertiesService.getScriptProperties().setProperty("GS_QUIZZES", JSON.stringify(data.quizzes || []));
+        return output({ success: true });
+
+      case "getQuizzes":
+        var qzRaw = PropertiesService.getScriptProperties().getProperty("GS_QUIZZES");
+        return output({ success: true, quizzes: qzRaw ? JSON.parse(qzRaw) : [] });
+
 
       default:
         return output({
