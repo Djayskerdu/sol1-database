@@ -2018,7 +2018,7 @@ const GS = {
   // Presentation state
   activeQuiz: null,
   currentQIdx: 0,
-  tableScores: {},      // tableNo -> LC credits earned this game
+  tableScores: {},      // tableNo -> SOL credits earned this game
   buzzOrder: [],        // array of tableNo strings, in buzz order
   currentBuzzWinner: null,
   countdownTimer: null,
@@ -2804,7 +2804,7 @@ function playQuestionPreviewThenCountdown(overlay, qNum, qText, onDone) {
   `;
   creditsReveal.innerHTML = `
     <div style="font-size:clamp(11px,2vw,15px);font-weight:800;color:rgba(255,255,255,0.55);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;">THIS QUESTION IS WORTH</div>
-    <div style="font-size:clamp(48px,10vw,88px);font-weight:900;color:#FFD700;line-height:1;text-shadow:0 0 60px #FFD70099;letter-spacing:2px;">${pts} LC</div>
+    <div style="font-size:clamp(48px,10vw,88px);font-weight:900;color:#FFD700;line-height:1;text-shadow:0 0 60px #FFD70099;letter-spacing:2px;">${pts} SOL</div>
     <div style="font-size:clamp(14px,2.5vw,22px);font-weight:800;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;margin-top:6px;">POINTS</div>
     <div style="margin-top:18px;font-size:clamp(13px,2vw,18px);font-weight:800;color:rgba(255,215,0,0.7);letter-spacing:2px;text-transform:uppercase;">▶ QUESTION ${qNum}</div>
   `;
@@ -3172,7 +3172,7 @@ async function awardTableCredits(tableNo, pts, reason) {
       creditsAdded: pts,
       addedBy: GS.currentHost?.['Full Name'] || 'Game Show'
     });
-    showToast(`✅ ${pts} LC awarded to ${getTableName(tableNo)}`);
+    showToast(`✅ ${pts} SOL awarded to ${getTableName(tableNo)}`);
   } catch (e) {
     showToast('⚠️ Credits award failed: ' + e.message);
   }
@@ -3712,7 +3712,7 @@ function showFinalScores() {
     col.innerHTML = `
       <div class="podium-avatar">${getAvatar(tableNo)}</div>
       <div class="podium-name" style="color:${color.label}">${getTableName(tableNo)}</div>
-      <div class="podium-pts">${pts} LC</div>
+      <div class="podium-pts">${pts} SOL</div>
       <div class="podium-block ${cfg.block}">${cfg.rankIcon}</div>
     `;
     stageEl.appendChild(col);
@@ -3726,7 +3726,7 @@ function showFinalScores() {
       return `<div class="podium-other-row">
         <div class="podium-other-rank">${rankLabels[i] || `#${i+4}`}</div>
         <div class="podium-other-name" style="color:${color.label}">${getTableName(t)}</div>
-        <div class="podium-other-pts">${pts} LC</div>
+        <div class="podium-other-pts">${pts} SOL</div>
       </div>`;
     }).join('');
   }
@@ -3788,7 +3788,7 @@ function showFinalScores() {
         <div class="lb-table-name" style="color:${color.label}">${getTableName(tableNo)}</div>
         <div class="lb-pts-label">Points Earned</div>
       </div>
-      <div class="lb-score">${pts}<span>LC</span></div>
+      <div class="lb-score">${pts}<span>SOL</span></div>
       <div class="lb-bar-wrap">
         <div class="lb-bar-fill" id="lb-bar-${idx}" style="background:${barColor};"></div>
       </div>`;
@@ -3876,7 +3876,7 @@ async function awardTableCredits_Random() {
       creditsAdded: cred,
       addedBy: GS.currentHost?.['Full Name'] || 'Game Show'
     });
-    showToast(`✅ ${cred} LC awarded to ${getTableName(tableNo)}!`);
+    showToast(`✅ ${cred} SOL awarded to ${getTableName(tableNo)}!`);
     // Hide award button, show student picker
     document.getElementById('random-winner-actions').style.display = 'none';
     const students = await getTableStudents(tableNo);
@@ -3899,7 +3899,7 @@ async function showStudentPicker(tableNo, cred, students) {
     <div class="tbl-row" style="cursor:pointer;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1)"
          onclick="awardIndividualStudent('${s['Student ID']}', '${s['Full Name'].replace(/'/g,"\\'")}', '${tableNo}', ${cred})">
       <div class="tr-name" style="font-size:15px">👤 ${s['Full Name']}</div>
-      <div class="tr-time" style="font-size:12px;color:var(--text2)">Tap to award +${cred} LC</div>
+      <div class="tr-time" style="font-size:12px;color:var(--text2)">Tap to award +${cred} SOL</div>
     </div>
   `).join('');
 
@@ -3919,7 +3919,7 @@ async function awardIndividualStudent(studentId, studentName, tableNo, cred) {
       creditsAdded: cred,
       addedBy: GS.currentHost?.['Full Name'] || 'Game Show'
     });
-    showToast(`✅ +${cred} LC also credited to ${studentName}!`);
+    showToast(`✅ +${cred} SOL also credited to ${studentName}!`);
     clearRandomRound();
   } catch (e) {
     showToast('❌ Individual award failed: ' + e.message);
