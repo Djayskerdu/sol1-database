@@ -2107,17 +2107,9 @@ function showToast(msg) {
 // ════════════════════════════════════════
 // API HELPERS
 // ════════════════════════════════════════
-async function apiGet(action, params = '', timeoutMs = 15000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const r = await fetch(`${GAS_URL}?action=${action}${params}`, { signal: controller.signal, cache: 'no-store' });
-    clearTimeout(timer);
-    return r.json();
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
+async function apiGet(action, params = '') {
+  const r = await fetch(`${GAS_URL}?action=${action}${params}`);
+  return r.json();
 }
 async function apiPost(payload) {
   const r = await fetch(GAS_URL, {
@@ -2131,78 +2123,19 @@ async function apiPost(payload) {
 // ════════════════════════════════════════
 // INITIAL DATA LOAD
 // ════════════════════════════════════════
-// Same cache key the main dashboard (script1.js) writes to — since both
-// pages are served from the same origin, we can read whatever index.html
-// last synced and render instantly instead of sitting on "Still loading
-// data" while Apps Script opens the spreadsheet again from scratch.
-const DATA_CACHE_KEY = 'sol1_data_cache_v1';
-
-function loadCachedBundleGS() {
-  try {
-    const raw = localStorage.getItem(DATA_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && parsed.bundle ? parsed.bundle : null;
-  } catch (e) { return null; }
-}
-
-function saveCachedBundleGS(bundle) {
-  try {
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ bundle, savedAt: Date.now() }));
-  } catch (e) { /* storage unavailable — non-fatal */ }
-}
-
-function applyBundleGS(bundle) {
-  if (!bundle) return;
-  GS.faculty     = bundle.faculty     || [];
-  GS.lessons     = bundle.lessonWeeks || [];
-  GS.tableGuides = bundle.tableGuides || [];
-  populateWeekSelects();
-}
-
 async function loadBaseData() {
-  // STEP 1 — instant render from whatever was last synced (by this page
-  // or by index.html — they share localStorage), so Sign In works right
-  // away instead of waiting on a fresh Apps Script round-trip.
-  const cached = loadCachedBundleGS();
-  if (cached) applyBundleGS(cached);
-
-  // STEP 2 — fetch live data in the background and swap it in.
-  // Uses the batched "allData" action (one spreadsheet open for every
-  // sheet) instead of three separate per-sheet calls, with one quiet
-  // retry, matching the approach in script1.js. Falls back to the old
-  // three-call approach if "allData" isn't available on the deployed
-  // backend yet.
   try {
-    let res;
-    try {
-      res = await apiGet('allData', '', 30000);
-    } catch (firstErr) {
-      res = await apiGet('allData', '', 30000);
-    }
-    if (!res || res.success === false || !res.data) throw new Error('allData not available');
-
-    // Preserve any other fields already in the cached bundle (e.g.
-    // students, payments) so we don't clobber what index.html saved —
-    // we only overwrite the pieces this page actually fetched.
-    const merged = Object.assign({}, cached || {}, res.data);
-    applyBundleGS(merged);
-    saveCachedBundleGS(merged);
+    const [fac, les, tg] = await Promise.all([
+      apiGet('faculty'),
+      apiGet('lessonWeeks'),
+      apiGet('tableGuides')
+    ]);
+    GS.faculty = fac.data || [];
+    GS.lessons = les.data || [];
+    GS.tableGuides = tg.data || [];
+    populateWeekSelects();
   } catch (e) {
-    console.warn('allData load failed, falling back to per-sheet calls:', e);
-    try {
-      const [fac, les, tg] = await Promise.all([
-        apiGet('faculty'),
-        apiGet('lessonWeeks'),
-        apiGet('tableGuides')
-      ]);
-      GS.faculty = fac.data || GS.faculty;
-      GS.lessons = les.data || GS.lessons;
-      GS.tableGuides = tg.data || GS.tableGuides;
-      populateWeekSelects();
-    } catch (e2) {
-      console.warn('Data load error:', e2);
-    }
+    console.warn('Data load error:', e);
   }
 }
 
