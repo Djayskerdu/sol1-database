@@ -2042,11 +2042,15 @@ function activateBuzzerGame(data) {
     btn.style.borderColor = color.border;
     btn.style.color = color.label;
     btn.style.boxShadow = `0 0 40px ${color.bg}88`;
-    btn.disabled = false;
-    btn.style.opacity = '1';
+    // Keep the buzzer LOCKED until the host actually opens a question.
+    // Buzzing here would silently be discarded by the host (GS.questionOpen
+    // is still false during the intro), which is why buzzes felt like they
+    // "didn't detect" — the button looked pressable but wasn't live yet.
+    btn.disabled = true;
+    btn.style.opacity = '0.35';
   }
 
-  resetBuzzState('🔔 Ready!', 'Wait for the question — then buzz in!');
+  resetBuzzState('⏳ Get Ready…', 'The question is coming up — don\'t buzz yet!');
   go('s-buzzer-game');
 }
 
