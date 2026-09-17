@@ -170,19 +170,32 @@ async function apiPost(payload) {
   });
   return r.json();
 }
-async function loadBaseData() {
-  try {
-    const [fac, les, tg] = await Promise.all([
-      apiGet('faculty'),
-      apiGet('lessonWeeks'),
-      apiGet('tableGuides')
-    ]);
-    GS.faculty = fac.data || [];
-    GS.lessons = les.data || [];
-    GS.tableGuides = tg.data || [];
-    populateWeekSelects();
-  } catch (e) {
-    console.warn('Data load error:', e);
+async function loadBaseData(retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const [fac, les, tg] = await Promise.all([
+        apiGet('faculty'),
+        apiGet('lessonWeeks'),
+        apiGet('tableGuides')
+      ]);
+      if (fac.success === false || les.success === false || tg.success === false) {
+        throw new Error(fac.error || les.error || tg.error || 'Server returned success:false');
+      }
+      GS.faculty = fac.data || [];
+      GS.lessons = les.data || [];
+      GS.tableGuides = tg.data || [];
+      populateWeekSelects();
+      GS._dataLoadFailed = false;
+      return; // success — stop retrying
+    } catch (e) {
+      console.warn(`Data load attempt ${attempt}/${retries} failed:`, e);
+      if (attempt === retries) {
+        GS._dataLoadFailed = true;
+        showToast('⚠️ Could not reach the server — check your connection and reload');
+      } else {
+        await new Promise(r => setTimeout(r, 1200 * attempt));
+      }
+    }
   }
 }
 function getTableName(tableNo) {
@@ -635,12 +648,24 @@ async function startPresentation(idx) {
 }
 
 function getTablesFromStudents() {
+  // Prefer the live TABLE_GUIDES data fetched this session — this is the
+  // source of truth and avoids showing stale/wrong tables from a cached
+  // localStorage value (e.g. left over from a different event/device).
+  if (GS.tableGuides && GS.tableGuides.length) {
+    const tables = [...new Set(GS.tableGuides.map(g => String(g['Table No'])).filter(Boolean))]
+      .sort((a, b) => parseInt(a) - parseInt(b));
+    if (tables.length) return tables;
+  }
 
   try {
     const stored = localStorage.getItem('gs_tables_v1');
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const arr = JSON.parse(stored);
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
   } catch {}
 
+  console.warn('getTablesFromStudents: no TABLE_GUIDES data and no cached tables — falling back to demo tables 1-5. Buzzes from real tables will not show up until data loads.');
   return [1,2,3,4,5];
 }
 
@@ -971,9 +996,19 @@ function updateCountdownUI(sec) {
 function onTableBuzzReceived(data) {
   const { tableNo } = data;
   if (!GS.questionOpen) return;
-  if (GS.buzzOrder.includes(String(tableNo))) return;
+  const key = String(tableNo);
+  if (GS.buzzOrder.includes(key)) return;
 
-  GS.buzzOrder.push(String(tableNo));
+  // Self-heal: if a real buzz comes in for a table that isn't in the
+  // rendered strip (e.g. tables-strip was built before data finished
+  // loading), add it on the fly instead of silently dropping the buzz.
+  if (!(key in GS.tableScores)) {
+    console.warn(`Buzz received from table "${key}" which wasn't in the tables strip — adding it now.`);
+    GS.tableScores[key] = 0;
+    renderTablesStrip();
+  }
+
+  GS.buzzOrder.push(key);
 
   if (!GS.currentBuzzWinner) {
     GS.currentBuzzWinner = String(tableNo);
