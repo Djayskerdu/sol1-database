@@ -262,8 +262,16 @@ async function broadcast(event, data) {
   _eventQueue.push(msg);
   if (_eventQueue.length > 20) _eventQueue = _eventQueue.slice(-20);
 
-
-  const payload = JSON.stringify({ action: 'setGameState', state: { events: _eventQueue } });
+  // FIX: previously this sent {action:'setGameState', state:{events:_eventQueue}},
+  // which OVERWRITES the entire server-side event log with just this device's own
+  // local history. If a phone had just appended a TABLE_BUZZ event (via
+  // appendGameEvent) in between two host broadcasts, that overwrite would silently
+  // wipe it out before the host's next poll ever saw it — a race condition that
+  // hits phones far more often than same-network desktop-to-desktop tests, because
+  // mobile round-trips to the backend are slower/more variable, widening the window
+  // in which a buzz can get clobbered. Switching to appendGameEvent (the same safe,
+  // additive endpoint the buzzer screens already use) removes the race entirely.
+  const payload = JSON.stringify({ action: 'appendGameEvent', event: msg });
   let saved = false;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
