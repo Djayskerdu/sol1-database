@@ -311,7 +311,16 @@ function startPolling() {
       const j = await r.json();
       if (!j?.state?.events) return;
       for (const ev of j.state.events) {
-        if (ev.ts <= _lastSeenTs) continue;
+        // FIX: was `<=`. Two events fired in the same JS tick (e.g. host's
+        // SHOW_CHOICES immediately followed by BUZZ_WINNER) can share the
+        // exact same Date.now() millisecond. With `<=`, processing the first
+        // one advanced _lastSeenTs to that same ts, which then made the
+        // second (equal-ts) event look "already seen" and skipped it forever
+        // — the actual cause of phones getting stuck on "Buzz sent!". Using
+        // `<` lets same-millisecond events through; the separate
+        // _processedEventKeys dedup in handleBroadcast (keyed by event+ts)
+        // still guarantees no event is ever handled twice.
+        if (ev.ts < _lastSeenTs) continue;
         _lastSeenTs = ev.ts;
         const hostToPhone = ['GAME_START','QUESTION_OPEN','QUESTION_CLOSED','BUZZ_WINNER','SHOW_CHOICES','ANSWER_RESULT','GAME_END','RANDOM_START','RANDOM_WINNER'];
         const phoneToHost = ['TABLE_BUZZ','RANDOM_BUZZ','PHONE_ANSWER'];
@@ -355,7 +364,7 @@ async function checkExistingGame() {
     const catchUpEvents = ['GAME_START'];
     _lastSeenTs = 0;
     for (const ev of recentEvents) {
-      if (ev.ts <= _lastSeenTs) continue;
+      if (ev.ts < _lastSeenTs) continue; // see note in startPolling() above
       _lastSeenTs = ev.ts;
       if (GS.currentBuzzerFaculty && catchUpEvents.includes(ev.event)) handleBroadcast(ev);
     }
