@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sol1-v2';
+const CACHE_NAME = 'sol1-v3'; // bumped so every phone purges old cached files (including any stale gameshow.html from before these fixes) on next load
 const ASSETS = [
   '/',
   '/index.html',
@@ -29,9 +29,20 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network-first for API calls
+  // FIX: never intercept calls to Apps Script. This used to catch a failed
+  // request and hand back a fake, empty `{ }` JSON response instead of
+  // letting the error propagate — which meant a phone whose buzz or poll
+  // request failed (a brief WiFi drop, common on crowded venue networks,
+  // rare on a stable desktop connection) would still see the request
+  // "succeed" with empty data. The app's own code only checks whether the
+  // fetch resolved, not whether it actually contains real data, so it
+  // confidently showed "Buzz sent!" for a buzz that never reached the
+  // server. By not calling respondWith() here at all, these requests go
+  // straight to the network with no service-worker involvement, so a real
+  // failure is a real rejected Promise — which the app's existing retry
+  // logic (in broadcast()) and error UI (in pressBuzzer()'s .catch()) can
+  // actually see and react to, instead of it being hidden.
   if (e.request.url.includes('script.google.com')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('{}', { headers: { 'Content-Type': 'application/json' } })));
     return;
   }
   // Network-first for all assets: always fetch fresh, fall back to cache when offline
