@@ -310,20 +310,25 @@ function startPolling() {
       });
       const j = await r.json();
       if (!j?.state?.events) return;
+      const hostToPhone = ['GAME_START','QUESTION_OPEN','QUESTION_CLOSED','BUZZ_WINNER','SHOW_CHOICES','ANSWER_RESULT','GAME_END','RANDOM_START','RANDOM_WINNER'];
+      const phoneToHost = ['TABLE_BUZZ','RANDOM_BUZZ','PHONE_ANSWER'];
+      // FIX: this used to skip any event whose ts was <= a watermark that
+      // got advanced on every processed event. Two events fired in the same
+      // JS tick (e.g. host's SHOW_CHOICES immediately followed by
+      // BUZZ_WINNER) routinely land on the exact same millisecond, so
+      // processing the first one silently marked the second as "already
+      // seen" and it was never handled — the actual cause of phones getting
+      // stuck on "Buzz sent!". Now _lastSeenTs is only ever used as the
+      // fixed floor set once at join time (see checkExistingGame), and every
+      // poll re-checks the full recent window against it. The ONLY thing
+      // that prevents an event from firing its side effects twice is the
+      // event+timestamp dedup set inside handleBroadcast — which also means
+      // if any single poll ever misses an event for any reason (dropped
+      // request, brief disconnect, etc.), the very next poll one second
+      // later will still catch and process it, instead of it being gone
+      // for good.
       for (const ev of j.state.events) {
-        // FIX: was `<=`. Two events fired in the same JS tick (e.g. host's
-        // SHOW_CHOICES immediately followed by BUZZ_WINNER) can share the
-        // exact same Date.now() millisecond. With `<=`, processing the first
-        // one advanced _lastSeenTs to that same ts, which then made the
-        // second (equal-ts) event look "already seen" and skipped it forever
-        // — the actual cause of phones getting stuck on "Buzz sent!". Using
-        // `<` lets same-millisecond events through; the separate
-        // _processedEventKeys dedup in handleBroadcast (keyed by event+ts)
-        // still guarantees no event is ever handled twice.
         if (ev.ts < _lastSeenTs) continue;
-        _lastSeenTs = ev.ts;
-        const hostToPhone = ['GAME_START','QUESTION_OPEN','QUESTION_CLOSED','BUZZ_WINNER','SHOW_CHOICES','ANSWER_RESULT','GAME_END','RANDOM_START','RANDOM_WINNER'];
-        const phoneToHost = ['TABLE_BUZZ','RANDOM_BUZZ','PHONE_ANSWER'];
         if (GS.currentBuzzerFaculty && hostToPhone.includes(ev.event)) handleBroadcast(ev);
         if (GS.currentHost && phoneToHost.includes(ev.event)) handleBroadcast(ev);
       }
@@ -2319,12 +2324,44 @@ function pressBuzzer() {
     body: JSON.stringify({ action: 'appendGameEvent', event })
   }).then(() => {
     resetBuzzState('✅ Buzz sent!', 'Waiting for host…');
+
+    // Self-heal watchdog: the 1s poll loop should pick up BUZZ_WINNER /
+    // SHOW_CHOICES well within a few seconds. If we're STILL sitting on
+    // "Buzz sent!" after 7s, something didn't arrive (a dropped request, a
+    // brief connectivity blip, etc.) — instead of waiting silently forever,
+    // force one extra immediate fetch of the full event log and replay
+    // everything relevant through handleBroadcast. Already-processed events
+    // are no-ops thanks to the dedup set, so this is always safe to run.
+    clearTimeout(GS._buzzWatchdog);
+    GS._buzzWatchdog = setTimeout(() => {
+      const l = document.getElementById('buzz-state-label');
+      if (l && l.textContent === '✅ Buzz sent!') forceResyncPhone();
+    }, 7000);
   }).catch(() => {
 
     btn.disabled = false;
     btn.style.opacity = '1';
     resetBuzzState('⚠️ Network error', 'Tap again to retry');
   });
+}
+
+// Last-resort resync: re-fetches the full recent event log and replays every
+// host→phone event through handleBroadcast, regardless of _lastSeenTs. Safe
+// to call any time — handleBroadcast's own event+timestamp dedup set means
+// anything already handled is simply skipped, so this can only fill in
+// something that was missed, never double-fire an effect.
+function forceResyncPhone() {
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'getGameState' })
+  }).then(r => r.json()).then(j => {
+    if (!j?.state?.events) return;
+    const hostToPhone = ['GAME_START','QUESTION_OPEN','QUESTION_CLOSED','BUZZ_WINNER','SHOW_CHOICES','ANSWER_RESULT','GAME_END','RANDOM_START','RANDOM_WINNER'];
+    for (const ev of j.state.events) {
+      if (GS.currentBuzzerFaculty && hostToPhone.includes(ev.event)) handleBroadcast(ev);
+    }
+  }).catch(() => {});
 }
 
 function resetBuzzState(label, sub) {
