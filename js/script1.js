@@ -2823,13 +2823,14 @@ function showLedFrame(el, text, force) {
     // Default (neither/both numeric) keeps the original num-first order.
     el.innerHTML = isNumeric(second) && !isNumeric(first) ? labelSpan + numSpan : numSpan + labelSpan;
     el.classList.add('led-chunk-split', 'led-chunk-score');
+    el.classList.remove('led-chunk-countdown', 'led-countdown-urgent');
   } else if (parts.length === 2) {
     el.innerHTML = `<span class="led-line">${escapeHtml(parts[0])}</span><span class="led-line led-line-2">${escapeHtml(parts[1])}</span>`;
     el.classList.add('led-chunk-split');
-    el.classList.remove('led-chunk-score');
+    el.classList.remove('led-chunk-score', 'led-chunk-countdown', 'led-countdown-urgent');
   } else {
     el.textContent = text;
-    el.classList.remove('led-chunk-split', 'led-chunk-score');
+    el.classList.remove('led-chunk-split', 'led-chunk-score', 'led-chunk-countdown', 'led-countdown-urgent');
   }
 
   el.classList.remove('led-text-in');
@@ -2961,7 +2962,13 @@ function showLedCountdown(el, label, remainingMs) {
   const ss = String(totalSec % 60).padStart(2, '0');
   const timeText = `${mm}:${ss}`;
 
-  const enteringCountdown = !el.classList.contains('led-chunk-countdown');
+  // Belt-and-suspenders: check for the actual child spans, not just the
+  // class — a stray leftover class with no matching markup underneath
+  // (e.g. from a code path that swaps el.innerHTML without clearing this
+  // class) would otherwise make this skip rebuilding and silently update
+  // nothing, freezing the board on whatever was on screen before.
+  const enteringCountdown = !el.classList.contains('led-chunk-countdown')
+    || !el.querySelector('.led-countdown-num');
   if (enteringCountdown) {
     el.classList.remove('led-chunk-split', 'led-chunk-score');
     el.classList.add('led-chunk-countdown');
