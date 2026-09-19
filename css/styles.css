@@ -640,10 +640,18 @@ input, select, button, textarea { font-family: var(--font); }
 .led-chunk#led-chunk-2, .led-chunk#led-preview-chunk-2 { display: none; }
 .led-chunk {
   font-family: 'Courier New', ui-monospace, SFMono-Regular, monospace;
-  font-weight: 700; letter-spacing: 6px;
+  font-weight: 700; letter-spacing: 0.14em;
   color: #ffd400;
   text-shadow: 0 0 6px rgba(255,212,0,0.9), 0 0 16px rgba(255,170,0,0.6), 0 0 34px rgba(255,140,0,0.35);
-  font-size: clamp(26px, 9vw, 60px);
+  /* This is only the very first paint, before script1.js measures the
+     screen's real (rotated) pixel dimensions and sets an exact inline
+     font-size — see fitLedTextWidth()/getLedFitBudget(). vmax (the
+     larger of the two viewport axes) is used instead of vw because the
+     forced-landscape board is width:100vh/height:100vw when rotated, so
+     plain vw badly undersizes the text on a portrait phone. Letter-
+     spacing is in em so it shrinks proportionally with the font instead
+     of eating into the fitted width. */
+  font-size: clamp(26px, 9vmax, 96px);
   text-align: center; white-space: normal; line-height: 1.3;
   /* Flex items don't shrink below their intrinsic content width by
      default (min-width:auto) — without this a long message would push
@@ -675,11 +683,15 @@ input, select, button, textarea { font-family: var(--font); }
 .led-chunk.led-chunk-split .led-line {
   display: block;
   white-space: nowrap;
-  font-size: clamp(20px, 7vw, 46px);
-  letter-spacing: 4px;
+  /* Fallback only — script1.js overrides this with an exact inline
+     font-size sized to the real screen (see getLedFitBudget()). vmax
+     instead of vw for the same reason as .led-chunk above. */
+  font-size: clamp(20px, 12vmax, 160px);
+  letter-spacing: 0.08em;
 }
 .led-chunk.led-chunk-split .led-line-2 {
-  font-size: clamp(16px, 5.5vw, 34px);
+  font-size: clamp(16px, 8vmax, 110px);
+  letter-spacing: 0.12em;
   opacity: 0.92;
 }
 .led-screen.led-flash .led-chunk {
@@ -781,8 +793,8 @@ input, select, button, textarea { font-family: var(--font); }
 }
 
 .led-chunk {
-  font-size: clamp(18px, 7vw, 48px) !important;
-  letter-spacing: 4px !important;
+  font-size: clamp(18px, 9vmax, 96px) !important;
+  letter-spacing: 0.1em !important;
   line-height: 1.3 !important;
   text-shadow:
     0 0 4px rgba(255,212,0,1), 0 0 10px rgba(255,180,0,0.9),
@@ -913,16 +925,16 @@ input, select, button, textarea { font-family: var(--font); }
 }
 .led-score-num {
   display: block;
-  font-size: clamp(40px, 15vw, 96px);
+  font-size: clamp(40px, 22vmax, 200px);
   line-height: 1;
-  letter-spacing: 2px;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 .led-score-label {
   display: block;
   margin-top: 10px;
-  font-size: clamp(12px, 3.2vw, 22px);
-  letter-spacing: 6px;
+  font-size: clamp(12px, 5vmax, 44px);
+  letter-spacing: 0.25em;
   opacity: 0.85;
   white-space: nowrap;
 }

@@ -2798,8 +2798,8 @@ const LED_CONFIG_DEFAULTS_CLIENT = {
 // Swaps the visible text on a marquee chunk, replaying the pop-in
 // animation only when the text actually changed — shared by the live
 // board rotation and the admin preview rotation.
-function showLedFrame(el, text) {
-  if (!el || el.dataset.ledText === text) return;
+function showLedFrame(el, text, force) {
+  if (!el || (!force && el.dataset.ledText === text)) return;
   el.dataset.ledText = text;
 
   // "N || SOL POINTS" frames render as a scoreboard: big number, smaller
@@ -2837,44 +2837,91 @@ function showLedFrame(el, text) {
   el.classList.add('led-text-in');
 
   // Any of the three layouts above (plain line, score num/label, or the
-  // two split lines) can still be wider than the screen for a long custom
-  // message or a big point total — instead of clipping the edges, shrink
-  // the font just enough for it to fit whole. A scrolling marquee was
-  // tried here first, but the frame-rotation timer (config.frameSeconds)
+  // two split lines) get sized against the screen's real, rotated pixel
+  // dimensions (see getLedFitBudget) so a short team name is blown up to
+  // fill as much of the board as possible, and a long one — e.g. "TEAM
+  // SHEPHERDS OF JESUS" — is scaled down just enough to stay whole
+  // instead of clipping at either edge. A scrolling marquee was tried
+  // here first, but the frame-rotation timer (config.frameSeconds)
   // advances to the next screen on its own schedule and was cutting the
-  // scroll off mid-pass before a long message finished — shrink-to-fit
+  // scroll off mid-pass before a long message finished — fit-to-size
   // guarantees the whole line is always visible immediately.
   const track = el.closest('.led-marquee-track') || el.parentElement;
   if (track) {
-    const trackStyle = getComputedStyle(track);
-    const maxWidth = track.clientWidth
-      - (parseFloat(trackStyle.paddingLeft) || 0)
-      - (parseFloat(trackStyle.paddingRight) || 0);
+    const { maxWidth, maxHeight } = getLedFitBudget(track);
     if (scoreParts.length === 2) {
-      fitLedTextWidth(el.querySelector('.led-score-num'), maxWidth);
-      fitLedTextWidth(el.querySelector('.led-score-label'), maxWidth);
+      fitLedTextWidth(el.querySelector('.led-score-num'), maxWidth, Math.min(maxWidth * 0.34, maxHeight * 0.62));
+      fitLedTextWidth(el.querySelector('.led-score-label'), maxWidth, Math.min(maxWidth * 0.09, maxHeight * 0.18));
     } else if (parts.length === 2) {
-      fitLedTextWidth(el.querySelector('.led-line'), maxWidth);
-      fitLedTextWidth(el.querySelector('.led-line-2'), maxWidth);
+      const line1 = el.querySelector('.led-line');
+      const line2 = el.querySelector('.led-line-2');
+      // The team name is the star of the screen — size it as large as
+      // the width/height budget allows...
+      fitLedTextWidth(line1, maxWidth, Math.min(maxWidth * 0.17, maxHeight * 0.42));
+      // ...then size "TABLE X" relative to whatever the name landed on,
+      // so the two lines stay visually balanced even after a long name
+      // has been scaled way down.
+      const line1Size = parseFloat(line1 && line1.style.fontSize) || (maxHeight * 0.42);
+      fitLedTextWidth(line2, maxWidth, Math.min(maxWidth * 0.11, maxHeight * 0.26, line1Size * 0.72));
     } else {
-      fitLedTextWidth(el, maxWidth);
+      fitLedTextWidth(el, maxWidth, Math.min(maxWidth * 0.2, maxHeight * 0.55));
     }
   }
 }
 
-// Shrinks an element's font-size (in place, via inline style) just enough
-// that its text fits within maxWidth instead of overflowing and getting
-// clipped by the LED screen's overflow:hidden. No-ops if it already fits.
-function fitLedTextWidth(el, maxWidth) {
+// The board's actual on-screen box (post the CSS rotate() that forces
+// landscape on a portrait phone — see .led-force-landscape) is what
+// clientWidth/clientHeight report, since transforms are purely visual
+// and don't change an element's own layout box. That makes them a
+// reliable, orientation-agnostic budget to size LED text against —
+// unlike vw/vh, which stay pinned to the *unrotated* window axes and
+// badly undersize text once the board is rotated 90°.
+function getLedFitBudget(track) {
+  const trackStyle = getComputedStyle(track);
+  const maxWidth = Math.max(40, track.clientWidth
+    - (parseFloat(trackStyle.paddingLeft) || 0)
+    - (parseFloat(trackStyle.paddingRight) || 0));
+  const screenEl = track.closest('.led-screen');
+  // Leave room for the bottom ticker strip + idle/rank text so a big
+  // block of fitted text never sits under them.
+  const screenH = (screenEl ? screenEl.clientHeight : track.clientHeight) || track.clientHeight;
+  const maxHeight = Math.max(50, screenH - 56);
+  return { maxWidth, maxHeight };
+}
+
+// Sets an element's font-size to idealPx, then shrinks it (never below
+// MIN_FONT_PX) just enough that the text fits within maxWidth instead of
+// overflowing and getting clipped by the LED screen's overflow:hidden.
+// Letter-spacing on these elements is defined in em (see styles.css) so
+// it scales down together with the font instead of quietly eating back
+// into the width we just fit it to.
+function fitLedTextWidth(el, maxWidth, idealPx) {
   if (!el || !maxWidth) return;
-  el.style.fontSize = ''; // start from the CSS clamp() default each time
-  const naturalWidth = el.scrollWidth;
-  if (naturalWidth <= maxWidth) return;
-  const baseSize = parseFloat(getComputedStyle(el).fontSize) || 16;
   const MIN_FONT_PX = 12; // floor so it never shrinks to unreadable
-  const newSize = Math.max(MIN_FONT_PX, baseSize * (maxWidth / naturalWidth) * 0.97);
+  const startPx = Math.max(MIN_FONT_PX, idealPx || parseFloat(getComputedStyle(el).fontSize) || 16);
+  el.style.fontSize = `${startPx}px`;
+  const naturalWidth = el.scrollWidth;
+  if (naturalWidth <= maxWidth) return; // already fits at the ideal size
+  const newSize = Math.max(MIN_FONT_PX, startPx * (maxWidth / naturalWidth) * 0.97);
   el.style.fontSize = `${newSize}px`;
 }
+
+// Re-runs the fit above for whatever's currently on screen, without
+// waiting for the text itself to change — used when the board's real
+// pixel size changes instead (fullscreen toggle, flip, device rotation).
+function refitActiveLedChunks() {
+  ['led-chunk-1', 'led-preview-chunk-1'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.dataset.ledText) showLedFrame(el, el.dataset.ledText, true);
+  });
+}
+let LED_REFIT_TIMER = null;
+function scheduleLedRefit() {
+  if (LED_REFIT_TIMER) clearTimeout(LED_REFIT_TIMER);
+  LED_REFIT_TIMER = setTimeout(refitActiveLedChunks, 120);
+}
+window.addEventListener('resize', scheduleLedRefit);
+window.addEventListener('orientationchange', scheduleLedRefit);
 
 // Swaps in the yellow/green/red/blue/white glow — shared by the faculty
 // board and the admin live preview.
@@ -2943,6 +2990,11 @@ async function openLedBoard() {
   // browser chrome and leaves all of that layout/rotation untouched.
   const rootEl = document.documentElement;
   if (rootEl && rootEl.requestFullscreen) rootEl.requestFullscreen().catch(() => {});
+  // Fullscreen engaging (or the browser chrome hiding/showing) can change
+  // the board's real pixel size after this function has already returned
+  // — re-fit once things settle so the text isn't left sized for the old
+  // dimensions.
+  scheduleLedRefit();
 }
 
 function closeLedBoard() {
@@ -2968,6 +3020,7 @@ function toggleLedFlip() {
   if (!overlay) return;
   const flipped = overlay.classList.toggle('led-flip');
   try { localStorage.setItem('sol1_led_flip', flipped ? '1' : '0'); } catch (e) {}
+  scheduleLedRefit();
 }
 
 function toggleLedFullscreen() {
@@ -2981,6 +3034,7 @@ function toggleLedFullscreen() {
   } else {
     document.exitFullscreen().catch(() => {});
   }
+  scheduleLedRefit();
 }
 
 function startLedPolling() {
