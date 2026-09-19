@@ -26,7 +26,7 @@
  * all the way through SOL 1 → SOL 2 → SOL 3.
  ************************************************/
 
-const SPREADSHEET_ID = "PASTE_YOUR_SOL1_SPREADSHEET_ID_HERE"; // ← REPLACE THIS
+const SPREADSHEET_ID = "1j5xhkCDSgAVNMVFS3Mp5Xah499mfco2o3LB_Eakig4o"; // ← REPLACE THIS
 
 /************************************************
  * NEW SHEETS REQUIRED IN YOUR GOOGLE SPREADSHEET:
@@ -123,6 +123,13 @@ function doGet(e) {
       case "facultyMember":
         return output(getFacultyById(e.parameter.facultyId));
 
+      // ── LED BOARD CONFIG (cross-device sync) ──
+      // Every faculty phone's live board polls this every ~6s to pick up
+      // whatever the admin last pushed from LED Board Control — display
+      // toggles, theme, custom message, and the break countdown.
+      case "ledConfig":
+        return output({ success: true, config: getLedConfig() });
+
       default:
         return output({
           success: false,
@@ -200,14 +207,27 @@ function doPost(e) {
 
       // appendGameEvent — used by phones to add a single event (buzz) without
       // overwriting the host's full event queue
-      case "appendGameEvent":
-        var gsAppRaw = PropertiesService.getScriptProperties().getProperty("GS_GAME_STATE");
-        var gsAppState = gsAppRaw ? JSON.parse(gsAppRaw) : { events: [] };
-        if (!gsAppState.events) gsAppState.events = [];
-        gsAppState.events.push(data.event);
-        if (gsAppState.events.length > 40) gsAppState.events = gsAppState.events.slice(-40);
-        PropertiesService.getScriptProperties().setProperty("GS_GAME_STATE", JSON.stringify(gsAppState));
+           case "appendGameEvent": {
+        // FIX: use a lock so two events fired back-to-back (SHOW_CHOICES
+        // immediately followed by BUZZ_WINNER when a table buzzes in) can't
+        // race each other and silently overwrite one another. Without this,
+        // whichever write lands last wins and the other event just vanishes
+        // — which is what left phones stuck on "Buzz sent! Waiting for
+        // host..." because SHOW_CHOICES never made it into the event log.
+        const lock = LockService.getScriptLock();
+        lock.waitLock(10000);
+        try {
+          var gsAppRaw = PropertiesService.getScriptProperties().getProperty("GS_GAME_STATE");
+          var gsAppState = gsAppRaw ? JSON.parse(gsAppRaw) : { events: [] };
+          if (!gsAppState.events) gsAppState.events = [];
+          gsAppState.events.push(data.event);
+          if (gsAppState.events.length > 40) gsAppState.events = gsAppState.events.slice(-40);
+          PropertiesService.getScriptProperties().setProperty("GS_GAME_STATE", JSON.stringify(gsAppState));
+        } finally {
+          lock.releaseLock();
+        }
         return output({ success: true });
+      }
 
       // getGameState via POST — avoids GAS GET CDN caching on mobile devices
       case "getGameState":
@@ -230,6 +250,31 @@ function doPost(e) {
         var qzRaw = PropertiesService.getScriptProperties().getProperty("GS_QUIZZES");
         return output({ success: true, quizzes: qzRaw ? JSON.parse(qzRaw) : [] });
 
+      // ── LED BOARD CONFIG (cross-device sync) ──
+      // This was previously missing entirely, which is why "Push to All
+      // LED Boards" showed a success toast but never actually changed
+      // anything on the faculty boards — the frontend only checks for an
+      // HTTP error, and Apps Script still returns HTTP 200 for an
+      // "Unknown action" response, so the failure was silent.
+      case "setLedConfig":
+        setLedConfig(data);
+        return output({ success: true, config: getLedConfig() });
+
+      case "clearLedMessage":
+        var clearedCfg = getLedConfig();
+        clearedCfg.customMessage = "";
+        saveLedConfig(clearedCfg);
+        return output({ success: true, config: clearedCfg });
+
+      // ── BREAK COUNTDOWN ──
+      // Admin > LED Board Control > Break Countdown. See startLedBreak()/
+      // stopLedBreak() below for why this is a shared end time rather
+      // than a duration.
+      case "startLedBreak":
+        return output({ success: true, config: startLedBreak(data) });
+
+      case "stopLedBreak":
+        return output({ success: true, config: stopLedBreak() });
 
       default:
         return output({
@@ -732,6 +777,73 @@ function addPromotionLog(data) {
 /************************************************
  * OUTPUT
  ************************************************/
+
+/************************************************
+ * LED BOARD CONFIG (cross-device sync)
+ * One shared config in Script Properties, same approach as GS_GAME_STATE.
+ * Keys must match LED_CONFIG_DEFAULTS_CLIENT in js/script1.js exactly.
+ ************************************************/
+const LED_CONFIG_DEFAULTS = {
+  showName: true, showPoints: true, showRank: false, flashOnIncrease: true,
+  theme: "yellow", customMessage: "", messageMode: "append", targetTable: "",
+  frameSeconds: 5,
+  breakEndTime: null,       // epoch ms the current break countdown ends, or null if none running
+  breakLabel: "BREAK TIME"  // label shown above the countdown digits
+};
+
+function getLedConfig() {
+  const raw = PropertiesService.getScriptProperties().getProperty("LED_CONFIG");
+  const saved = raw ? JSON.parse(raw) : {};
+  return Object.assign({}, LED_CONFIG_DEFAULTS, saved);
+}
+
+function saveLedConfig(config) {
+  PropertiesService.getScriptProperties().setProperty("LED_CONFIG", JSON.stringify(config));
+}
+
+// Builds a full config from the admin's POST body (which also carries
+// "action") merged over whatever's already saved, then persists it.
+function setLedConfig(data) {
+  const current = getLedConfig();
+  const next = Object.assign({}, current, {
+    showName:        !!data.showName,
+    showPoints:      !!data.showPoints,
+    showRank:        !!data.showRank,
+    flashOnIncrease: !!data.flashOnIncrease,
+    theme:           data.theme || current.theme,
+    customMessage:   data.customMessage || "",
+    messageMode:     data.messageMode || current.messageMode,
+    targetTable:     data.targetTable || "",
+    frameSeconds:    Number(data.frameSeconds) || current.frameSeconds
+  });
+  saveLedConfig(next);
+  return next;
+}
+
+// Break countdown: stores a shared END TIME (epoch ms), not a duration —
+// every faculty phone computes its own "time remaining" locally off this
+// same instant every second, so all boards stay in sync even though each
+// one polls independently every ~6-8s. Only touches breakEndTime/
+// breakLabel, so it never disturbs the rest of the config (name/points/
+// theme/message) — and setLedConfig() above never disturbs these two in
+// return, since it only ever writes the fields it explicitly names.
+function startLedBreak(data) {
+  const current = getLedConfig();
+  const minutes = Number(data.minutes) || 5;
+  const next = Object.assign({}, current, {
+    breakEndTime: Date.now() + (minutes * 60000),
+    breakLabel: data.label || "BREAK TIME"
+  });
+  saveLedConfig(next);
+  return next;
+}
+
+function stopLedBreak() {
+  const current = getLedConfig();
+  const next = Object.assign({}, current, { breakEndTime: null });
+  saveLedConfig(next);
+  return next;
+}
 
 function output(data) {
   return ContentService

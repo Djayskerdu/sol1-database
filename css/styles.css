@@ -938,3 +938,42 @@ input, select, button, textarea { font-family: var(--font); }
   opacity: 0.85;
   white-space: nowrap;
 }
+
+/* ── Break countdown ──
+   Live "BREAK TIME / 04:32" screen, pushed from Admin > LED Board
+   Control > Break Countdown. Overrides the normal rotation on every
+   board until time's up (see tickLedFrame()/getLedBreakRemainingMs() in
+   script1.js), then hands back to it automatically. */
+.led-chunk.led-chunk-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1 !important;
+  letter-spacing: normal !important;
+}
+.led-countdown-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: clamp(12px, 5vmax, 40px);
+  letter-spacing: 0.25em;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.led-countdown-num {
+  display: block;
+  font-size: clamp(40px, 20vmax, 190px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* Last 30 seconds pulse red-ish so the room can feel time running out
+   without needing to read the exact number. */
+.led-chunk.led-chunk-countdown.led-countdown-urgent .led-countdown-num {
+  animation: ledCountdownUrgent 1s ease-in-out infinite;
+}
+@keyframes ledCountdownUrgent {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.6); }
+}

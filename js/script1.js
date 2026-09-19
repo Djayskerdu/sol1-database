@@ -530,7 +530,7 @@ function go(id) {
   if (id === 's-r-balances')    { renderBalances(); renderBalancesSummary(); }
   if (id === 's-add-credit')   populateCreditStudentSelect();
   if (id === 's-a-led-control') openLedControl();
-  if (id !== 's-a-led-control') stopLedPreviewRotation();
+  if (id !== 's-a-led-control') { stopLedPreviewRotation(); stopLedBreakUiTicker(); }
 }
 
 // Manually re-syncs all data from the sheet and re-renders whatever screen
@@ -2792,7 +2792,7 @@ let LED_ANNOUNCE_QUEUE = []; // one-time "+X SOL POINTS ADDED" / "TOTAL SOL POIN
 const LED_CONFIG_DEFAULTS_CLIENT = {
   showName: true, showPoints: true, showRank: false, flashOnIncrease: true,
   theme: 'yellow', customMessage: '', messageMode: 'append', targetTable: '',
-  frameSeconds: 5
+  frameSeconds: 5, breakEndTime: null, breakLabel: 'BREAK TIME'
 };
 
 // Swaps the visible text on a marquee chunk, replaying the pop-in
@@ -2912,7 +2912,20 @@ function fitLedTextWidth(el, maxWidth, idealPx) {
 function refitActiveLedChunks() {
   ['led-chunk-1', 'led-preview-chunk-1'].forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.dataset.ledText) showLedFrame(el, el.dataset.ledText, true);
+    if (!el || !el.dataset.ledText) return;
+    if (el.classList.contains('led-chunk-countdown')) {
+      // Countdown screens re-fit through showLedCountdown (it reads the
+      // digits already on screen instead of re-parsing the " | "/" || "
+      // text format showLedFrame expects).
+      const numEl = el.querySelector('.led-countdown-num');
+      const labelEl = el.querySelector('.led-countdown-label');
+      if (numEl && labelEl) {
+        const [mm, ss] = numEl.textContent.split(':').map(Number);
+        showLedCountdown(el, labelEl.textContent, ((mm || 0) * 60 + (ss || 0)) * 1000);
+      }
+    } else {
+      showLedFrame(el, el.dataset.ledText, true);
+    }
   });
 }
 let LED_REFIT_TIMER = null;
@@ -2922,6 +2935,56 @@ function scheduleLedRefit() {
 }
 window.addEventListener('resize', scheduleLedRefit);
 window.addEventListener('orientationchange', scheduleLedRefit);
+
+// ═══════════════════════════════════════════
+// BREAK COUNTDOWN
+// config.breakEndTime is a shared, absolute epoch-ms moment (not a
+// duration) — every board computes its own remaining time off that same
+// instant every second, so all of them count down in sync no matter when
+// each one last polled the server. See tickLedFrame() for where this
+// takes over the normal Name → Points → Rank rotation.
+// ═══════════════════════════════════════════
+function getLedBreakRemainingMs(config) {
+  const end = Number(config && config.breakEndTime) || 0;
+  if (!end) return 0;
+  return end - Date.now();
+}
+
+// Renders (or live-updates) the big "BREAK TIME / 04:32" screen. Only
+// rebuilds the markup the first time a board enters countdown mode —
+// every tick after that just updates the digits in place so the pop-in
+// animation doesn't replay every second.
+function showLedCountdown(el, label, remainingMs) {
+  if (!el) return;
+  const totalSec = Math.max(0, Math.ceil(remainingMs / 1000));
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  const timeText = `${mm}:${ss}`;
+
+  const enteringCountdown = !el.classList.contains('led-chunk-countdown');
+  if (enteringCountdown) {
+    el.classList.remove('led-chunk-split', 'led-chunk-score');
+    el.classList.add('led-chunk-countdown');
+    el.innerHTML = `<span class="led-countdown-label">${escapeHtml(label)}</span><span class="led-countdown-num"></span>`;
+    el.classList.remove('led-text-in');
+    void el.offsetWidth; // force reflow so the animation restarts cleanly
+    el.classList.add('led-text-in');
+  }
+  el.dataset.ledText = `__countdown__${label}`;
+  el.classList.toggle('led-countdown-urgent', totalSec <= 30 && totalSec > 0);
+
+  const numEl   = el.querySelector('.led-countdown-num');
+  const labelEl = el.querySelector('.led-countdown-label');
+  if (numEl) numEl.textContent = timeText;
+  if (labelEl && enteringCountdown) labelEl.textContent = label;
+
+  const track = el.closest('.led-marquee-track') || el.parentElement;
+  if (track) {
+    const { maxWidth, maxHeight } = getLedFitBudget(track);
+    fitLedTextWidth(numEl, maxWidth, Math.min(maxWidth * 0.34, maxHeight * 0.62));
+    fitLedTextWidth(labelEl, maxWidth, Math.min(maxWidth * 0.1, maxHeight * 0.18));
+  }
+}
 
 // Swaps in the yellow/green/red/blue/white glow — shared by the faculty
 // board and the admin live preview.
@@ -3117,9 +3180,31 @@ function renderLedBanner() {
 
 // Advances the live board through LED_ANNOUNCE_QUEUE first (one-time
 // "points added" screens), then LED_FRAMES on a loop — each held for
-// config.frameSeconds (announcements hold a shorter, fixed 3s).
+// config.frameSeconds (announcements hold a shorter, fixed 3s). A live
+// break countdown (config.breakEndTime) takes over everything above
+// while it's running, ticking every second instead of every
+// frameSeconds, then hands back to the normal rotation on its own the
+// moment it hits zero — no admin action needed to end it.
+let LED_BREAK_WAS_ACTIVE = false;
 function tickLedFrame() {
   const chunk1 = document.getElementById('led-chunk-1');
+  const config = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
+
+  const breakRemaining = getLedBreakRemainingMs(config);
+  if (breakRemaining > 0) {
+    showLedCountdown(chunk1, (config.breakLabel || 'BREAK TIME').toUpperCase(), breakRemaining);
+    LED_BREAK_WAS_ACTIVE = true;
+    LED_FRAME_TIMER = setTimeout(tickLedFrame, 1000); // live tick, not frameSeconds
+    return;
+  }
+  if (LED_BREAK_WAS_ACTIVE) {
+    // Countdown just ran out — one-time "break's over" screen ahead of
+    // the normal rotation resuming, same pattern as the points-added
+    // announcements below.
+    LED_ANNOUNCE_QUEUE.unshift("⏰ BREAK'S OVER!");
+    LED_BREAK_WAS_ACTIVE = false;
+  }
+
   let text;
   if (LED_ANNOUNCE_QUEUE.length) {
     text = LED_ANNOUNCE_QUEUE.shift();
@@ -3131,8 +3216,7 @@ function tickLedFrame() {
   }
   showLedFrame(chunk1, text);
 
-  const config = APP.ledConfig || LED_CONFIG_DEFAULTS_CLIENT;
-  const seconds = LED_ANNOUNCE_QUEUE.length || text.startsWith('+') || text.startsWith('TOTAL SOL POINTS')
+  const seconds = LED_ANNOUNCE_QUEUE.length || text.startsWith('+') || text.startsWith('TOTAL SOL POINTS') || text.startsWith('⏰')
     ? 3
     : (Number(config.frameSeconds) || 5);
   LED_FRAME_TIMER = setTimeout(tickLedFrame, seconds * 1000);
@@ -3342,6 +3426,11 @@ async function openLedControl() {
       populateLedTargetSelect(cfg.targetTable || '');
       selectLedTheme(cfg.theme || 'yellow');
       setLedMessageMode(cfg.messageMode || 'append');
+      // Pick up a countdown already running from another admin device
+      // instead of showing "start" as if nothing were live.
+      LED_BREAK_END = cfg.breakEndTime || null;
+      if (LED_BREAK_END && LED_BREAK_END > Date.now()) startLedBreakUiTicker();
+      else updateLedBreakStatusUI();
     }
   } catch (err) {
     console.error('openLedControl error:', err);
@@ -3377,6 +3466,85 @@ async function doClearLedMessage() {
   } catch (err) {
     showToast('❌ ' + (err.message || 'Failed to clear message'));
     console.error('doClearLedMessage error:', err);
+  }
+}
+
+// ═══════════════════════════════════════════
+// ADMIN — BREAK COUNTDOWN
+// Same shared-config mechanism as the rest of LED Board Control: pushes
+// an absolute breakEndTime that every board counts down from locally
+// (see getLedBreakRemainingMs()/tickLedFrame() above), and mirrors that
+// same countdown here so the admin can see it's live without needing to
+// open a faculty board.
+// ═══════════════════════════════════════════
+let LED_BREAK_END      = null;
+let LED_BREAK_UI_TIMER = null;
+
+function updateLedBreakStatusUI() {
+  const statusEl = document.getElementById('led-break-status');
+  const startBtn = document.getElementById('led-break-start-btn');
+  const stopBtn  = document.getElementById('led-break-stop-btn');
+  if (!statusEl || !startBtn || !stopBtn) return;
+
+  const remaining = LED_BREAK_END ? LED_BREAK_END - Date.now() : 0;
+  if (remaining > 0) {
+    const totalSec = Math.ceil(remaining / 1000);
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    statusEl.style.display = 'block';
+    statusEl.textContent = `⏱ Live on every board — ${mm}:${ss} remaining`;
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+  } else {
+    if (LED_BREAK_END) LED_BREAK_END = null; // just ran out locally
+    statusEl.style.display = 'none';
+    startBtn.style.display = 'block';
+    stopBtn.style.display = 'none';
+    stopLedBreakUiTicker();
+  }
+}
+
+function startLedBreakUiTicker() {
+  stopLedBreakUiTicker();
+  updateLedBreakStatusUI();
+  LED_BREAK_UI_TIMER = setInterval(updateLedBreakStatusUI, 1000);
+}
+
+function stopLedBreakUiTicker() {
+  if (LED_BREAK_UI_TIMER) { clearInterval(LED_BREAK_UI_TIMER); LED_BREAK_UI_TIMER = null; }
+}
+
+async function doStartLedBreak() {
+  const minutes = Number(document.getElementById('led-cfg-break-minutes')?.value) || 5;
+  const btn = document.getElementById('led-break-start-btn');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+    const res = await apiPost({ action: 'startLedBreak', minutes, label: 'BREAK TIME' });
+    LED_BREAK_END = (res && res.config && res.config.breakEndTime) || (Date.now() + minutes * 60000);
+    if (APP.ledConfig) {
+      APP.ledConfig.breakEndTime = LED_BREAK_END;
+      APP.ledConfig.breakLabel = (res && res.config && res.config.breakLabel) || 'BREAK TIME';
+    }
+    startLedBreakUiTicker();
+    showToast(`⏱ ${minutes}-min break countdown started on every board`);
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to start countdown'));
+    console.error('doStartLedBreak error:', err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Start Break Countdown'; }
+  }
+}
+
+async function doStopLedBreak() {
+  try {
+    await apiPost({ action: 'stopLedBreak' });
+    LED_BREAK_END = null;
+    if (APP.ledConfig) APP.ledConfig.breakEndTime = null;
+    updateLedBreakStatusUI();
+    showToast('⏹ Countdown stopped on every board');
+  } catch (err) {
+    showToast('❌ ' + (err.message || 'Failed to stop countdown'));
+    console.error('doStopLedBreak error:', err);
   }
 }
 

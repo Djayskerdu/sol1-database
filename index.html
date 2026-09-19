@@ -1177,6 +1177,26 @@
       <button class="led-theme-swatch" data-theme="white" onclick="selectLedTheme('white')" style="flex:1;height:44px;border-radius:10px;border:2px solid #333;background:#000;color:#f4f4f4;font-weight:700;cursor:pointer">White</button>
     </div>
 
+    <!-- Break countdown -->
+    <div class="slabel">Break Countdown</div>
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div class="field" style="margin-bottom:10px">
+        <label>Length</label>
+        <select id="led-cfg-break-minutes">
+          <option value="3">3 minutes</option>
+          <option value="5" selected>5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+        </select>
+      </div>
+      <div id="led-break-status" style="display:none;background:#fff7e0;border:1px solid #f0d98a;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#8a6d1a;text-align:center;font-weight:700"></div>
+      <div style="display:flex;gap:8px">
+        <button id="led-break-start-btn" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:none;background:#c9960c;color:#fff;font-weight:700;font-size:13px;cursor:pointer" onclick="doStartLedBreak()">▶ Start Break Countdown</button>
+        <button id="led-break-stop-btn" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid #ddd;background:#fff;color:#555;font-weight:600;font-size:13px;cursor:pointer;display:none" onclick="doStopLedBreak()">⏹ Stop</button>
+      </div>
+      <p style="text-align:center;font-size:11px;color:var(--gray);margin:8px 0 0">Takes over every board with a live countdown, then resumes the normal rotation on its own when time's up.</p>
+    </div>
+
     <!-- Custom message -->
     <div class="slabel">Send a Custom Message</div>
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
