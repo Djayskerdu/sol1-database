@@ -299,7 +299,7 @@ function applyBundle(bundle) {
   if (settingsData.length) {
     settingsData.forEach(row => { APP.settings[row['Setting']] = row['Value']; });
     APP.currentWeek = Number(APP.settings['Current Week'] || 1);
-    APP.totalFee    = Number(APP.settings['Total Class Fee'] || 500);
+    APP.totalFee    = Number(APP.settings['Total Class Fee'] || 250);
   }
 
   loadDevotionalsFromSheet(bundle.devotionals || []);
