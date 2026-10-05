@@ -48,6 +48,146 @@ async function apiPost(payload) {
 }
 
 // ═══════════════════════════════════════════
+// LESSON VIDEO — ANTI-FAST-FORWARD GATING
+// Same rule/mechanism as the Student app's make-up class videos: once a
+// lesson's "Slides URL" cell holds a YouTube link instead of a Slides
+// link, it plays with native controls hidden and the seek bar polled so
+// dragging/skipping ahead gets snapped back — no fast-forwarding, and
+// no access to YouTube's speed menu since the controls are hidden.
+// ═══════════════════════════════════════════
+let lessonYtApiPromise = null;
+let lessonYtPlayer = null;
+let lessonYtPollTimer = null;
+let lessonWatchProgress = { furthest: 0, duration: 0, ended: false };
+const LESSON_SEEK_TOLERANCE_SEC = 1.5; // small allowance for normal playback drift, not real skipping
+
+function ensureLessonYouTubeApi() {
+  if (window.YT && window.YT.Player) return Promise.resolve();
+  if (lessonYtApiPromise) return lessonYtApiPromise;
+  lessonYtApiPromise = new Promise((resolve) => {
+    const prevReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+      if (typeof prevReady === 'function') prevReady();
+      resolve();
+    };
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  });
+  return lessonYtApiPromise;
+}
+
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
+  return m ? m[1] : null;
+}
+
+function destroyLessonYtPlayer() {
+  if (lessonYtPollTimer) { clearInterval(lessonYtPollTimer); lessonYtPollTimer = null; }
+  if (lessonYtPlayer) {
+    try { lessonYtPlayer.destroy(); } catch (e) { /* iframe already gone — fine */ }
+    lessonYtPlayer = null;
+  }
+  lessonWatchProgress = { furthest: 0, duration: 0, ended: false };
+}
+
+function initLessonYtPlayer(ytId) {
+  lessonWatchProgress = { furthest: 0, duration: 0, ended: false };
+  ensureLessonYouTubeApi().then(() => {
+    const container = document.getElementById('lv-yt-player');
+    if (!container) return; // screen was navigated away from before the API loaded
+    lessonYtPlayer = new YT.Player('lv-yt-player', {
+      videoId: ytId,
+      playerVars: {
+        controls: 0, disablekb: 1, rel: 0, modestbranding: 1,
+        iv_load_policy: 3, playsinline: 1, origin: location.origin
+      },
+      events: {
+        onReady: onLessonYtReady,
+        onStateChange: onLessonYtStateChange
+      }
+    });
+  });
+}
+
+function onLessonYtReady() {
+  if (!lessonYtPlayer) return;
+  lessonWatchProgress.duration = lessonYtPlayer.getDuration() || 0;
+  updateLessonWatchUI(lessonWatchProgress.furthest, lessonWatchProgress.duration);
+}
+
+function onLessonYtStateChange(e) {
+  if (!lessonYtPlayer || !window.YT) return;
+  const btn = document.getElementById('lv-playpause-btn');
+  if (e.data === YT.PlayerState.PLAYING) {
+    if (btn) btn.textContent = '⏸ Pause';
+    startLessonWatchPolling();
+  } else if (e.data === YT.PlayerState.PAUSED) {
+    if (btn) btn.textContent = '▶ Play';
+    stopLessonWatchPolling();
+  } else if (e.data === YT.PlayerState.ENDED) {
+    if (btn) btn.textContent = '▶ Play';
+    stopLessonWatchPolling();
+    lessonWatchProgress.ended = true;
+    lessonWatchProgress.furthest = lessonWatchProgress.duration || lessonWatchProgress.furthest;
+    updateLessonWatchUI(lessonWatchProgress.furthest, lessonWatchProgress.duration);
+  }
+}
+
+function startLessonWatchPolling() {
+  stopLessonWatchPolling();
+  lessonYtPollTimer = setInterval(pollLessonWatchProgress, 400);
+}
+
+function stopLessonWatchPolling() {
+  if (lessonYtPollTimer) { clearInterval(lessonYtPollTimer); lessonYtPollTimer = null; }
+}
+
+function pollLessonWatchProgress() {
+  const p = lessonYtPlayer;
+  if (!p || typeof p.getCurrentTime !== 'function') return;
+  const cur = p.getCurrentTime();
+  const dur = p.getDuration() || lessonWatchProgress.duration || 0;
+
+  if (cur > lessonWatchProgress.furthest + LESSON_SEEK_TOLERANCE_SEC) {
+    // Dragged/skipped ahead of what's actually been watched — snap the
+    // playhead back so it can't be fast-forwarded through.
+    p.seekTo(lessonWatchProgress.furthest, true);
+  } else {
+    lessonWatchProgress.furthest = Math.max(lessonWatchProgress.furthest, cur);
+  }
+
+  updateLessonWatchUI(lessonWatchProgress.furthest, dur);
+
+  if (dur && lessonWatchProgress.furthest >= dur - 0.75) {
+    lessonWatchProgress.ended = true;
+  }
+}
+
+function updateLessonWatchUI(cur, dur) {
+  const fill = document.getElementById('lv-progress-fill');
+  const time = document.getElementById('lv-time-label');
+  if (fill) fill.style.width = dur ? Math.min(100, (cur / dur) * 100) + '%' : '0%';
+  if (time) time.textContent = `${formatLessonSeconds(cur)} / ${formatLessonSeconds(dur)}`;
+}
+
+function formatLessonSeconds(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function toggleLessonYtPlayback() {
+  const p = lessonYtPlayer;
+  if (!p || typeof p.getPlayerState !== 'function') return;
+  const state = p.getPlayerState();
+  if (state === 1 /* YT.PlayerState.PLAYING */) p.pauseVideo();
+  else p.playVideo();
+}
+
+// ═══════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════
 let APP = {
@@ -499,6 +639,9 @@ function refreshCurrentScreen() {
 const LOGIN_SCREEN_IDS = ['s-portal', 's-faculty-login', 's-admin-login', 's-record-login', 's-gs-host-login', 's-gs-buzzer-login'];
 
 function go(id) {
+  // Tear down any live lesson YouTube player before leaving that screen.
+  if (APP.currentScreen === 's-f-lesson-detail' && id !== 's-f-lesson-detail') destroyLessonYtPlayer();
+
   const main = document.getElementById('desktop-main');
   (main ? main.querySelectorAll('.screen') : document.querySelectorAll('.screen'))
     .forEach(s => { s.classList.remove('active'); s.classList.remove('screen-animated'); });
@@ -559,9 +702,16 @@ function renderWeeks(prefix) {
     grid.innerHTML = '<p style="padding:16px;color:var(--gray)">No lessons found.</p>';
     return;
   }
-  grid.innerHTML = APP.lessons.map(l => `
-    <div class="week-card" style="cursor:pointer;border:1.5px solid var(--border);border-radius:12px;padding:14px;background:#fff;transition:box-shadow 0.15s" onclick="showLessonDetail(${l['Week No']},'${prefix}')" onmouseover="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.10)'" onmouseout="this.style.boxShadow='none'">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:2px">WEEK ${l["Week No"]}</div>
+  // Sort so lessons within the same week stay grouped and ordered (Week 1
+  // Lesson 1, Week 1 Lesson 2, Week 2 Lesson 3, Week 2 Lesson 4, ...)
+  const sorted = APP.lessons.slice().sort((a, b) => {
+    const wDiff = Number(a["Week No"]) - Number(b["Week No"]);
+    if (wDiff !== 0) return wDiff;
+    return Number(a["Lesson No"] || 0) - Number(b["Lesson No"] || 0);
+  });
+  grid.innerHTML = sorted.map(l => `
+    <div class="week-card" style="cursor:pointer;border:1.5px solid var(--border);border-radius:12px;padding:14px;background:#fff;transition:box-shadow 0.15s" onclick="showLessonDetail(${l['Week No']},${l['Lesson No'] || 'null'},'${prefix}')" onmouseover="this.style.boxShadow='0 2px 12px rgba(0,0,0,0.10)'" onmouseout="this.style.boxShadow='none'">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:2px">WEEK ${l["Week No"]}${l["Lesson No"] ? ` · LESSON ${l["Lesson No"]}` : ''}</div>
       <strong style="font-size:14px;color:var(--text1)">${l["Lesson Title"] || ""}</strong>
       <div style="margin-top:6px;font-size:11px;color:var(--text3)">${l["Status"] || ""}</div>
     </div>
@@ -626,22 +776,75 @@ function formatLessonContent(raw) {
   return html || `<p class="lc-para">${escapeHtml(text)}</p>`;
 }
 
-function showLessonDetail(weekNo, prefix) {
-  const lesson = APP.lessons.find(l => String(l["Week No"]) === String(weekNo));
+// Turns a normal Google Slides "share" link (the kind you get from the
+// Share button — e.g. .../presentation/d/XXXXX/edit?usp=sharing) into an
+// embeddable URL. Also accepts a link already in /embed or /pub form and
+// passes it through unchanged. Returns '' if it doesn't look like a Slides
+// link at all, so callers can safely fall back to the text content.
+function getSlidesEmbedUrl(raw) {
+  const url = String(raw || '').trim();
+  if (!url) return '';
+  if (!/docs\.google\.com\/presentation/i.test(url)) return '';
+  if (/\/embed/i.test(url) || /\/pub/i.test(url)) return url; // already embeddable
+  const m = url.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
+  if (!m) return '';
+  return `https://docs.google.com/presentation/d/${m[1]}/embed?start=false&loop=false&delayms=3000`;
+}
+
+function showLessonDetail(weekNo, lessonNo, prefix) {
+  const lesson = (lessonNo !== null && lessonNo !== undefined && lessonNo !== '')
+    ? APP.lessons.find(l => String(l["Week No"]) === String(weekNo) && String(l["Lesson No"]) === String(lessonNo))
+    : APP.lessons.find(l => String(l["Week No"]) === String(weekNo));
   if (!lesson) return;
+
+  // Tear down any live YouTube player before wiping the DOM — otherwise
+  // its poll interval keeps firing against a detached iframe.
+  destroyLessonYtPlayer();
 
   const titleEl = document.getElementById('lesson-detail-title');
   const bodyEl  = document.getElementById('lesson-detail-body');
 
-  if (titleEl) titleEl.textContent = `Week ${lesson["Week No"]}`;
+  // The "Slides URL" column can hold either a Google Slides share link
+  // (legacy) or a YouTube link (current). YouTube links get the same
+  // gated, anti-fast-forward/anti-2x player used for the Student app's
+  // make-up class videos — no native controls, seek bar polled and
+  // snapped back if dragged ahead. Anything else falls back to a plain
+  // Slides embed, then to the "Lesson Content" text.
+  const rawUrl = lesson["Slides URL"];
+  const slidesEmbedUrl = getSlidesEmbedUrl(rawUrl);
+  const ytId = slidesEmbedUrl ? null : extractYouTubeId(rawUrl);
+
+  let contentBlockHtml, sectionLabel, sectionPadded;
+  if (ytId) {
+    contentBlockHtml = `
+      <div class="lv-video-frame" id="lv-yt-player"></div>
+      <div class="lv-controls-row">
+        <button type="button" class="lv-playpause-btn" id="lv-playpause-btn" onclick="toggleLessonYtPlayback()">▶ Play</button>
+        <div class="lv-progress-track"><div class="lv-progress-fill" id="lv-progress-fill"></div></div>
+        <span class="lv-time-label" id="lv-time-label">0:00 / 0:00</span>
+      </div>
+      <div class="lv-note">Watch without skipping ahead — the seek bar and speed controls are locked.</div>`;
+    sectionLabel = 'LESSON VIDEO';
+    sectionPadded = true;
+  } else if (slidesEmbedUrl) {
+    contentBlockHtml = `<div class="slides-embed-wrap"><iframe src="${slidesEmbedUrl}" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+    sectionLabel = 'LESSON SLIDES';
+    sectionPadded = true;
+  } else {
+    contentBlockHtml = `<div class="lc-content">${formatLessonContent(lesson["Lesson Content"])}</div>`;
+    sectionLabel = 'LESSON CONTENT';
+    sectionPadded = false;
+  }
+
+  if (titleEl) titleEl.textContent = `Week ${lesson["Week No"]}${lesson["Lesson No"] ? ` · Lesson ${lesson["Lesson No"]}` : ''}`;
   if (bodyEl) bodyEl.innerHTML = `
     <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--navy),var(--navy-light));padding:18px">
       <div style="font-size:11px;color:rgba(255,255,255,0.65);font-weight:600;margin-bottom:4px">LESSON TITLE</div>
       <div style="font-size:18px;font-weight:700;color:#fff;font-family:var(--font-head)">${lesson["Lesson Title"] || "—"}</div>
     </div>
-    <div class="card" style="margin-bottom:12px;padding:18px">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px">LESSON CONTENT</div>
-      <div class="lc-content">${formatLessonContent(lesson["Lesson Content"])}</div>
+    <div class="card" style="margin-bottom:12px;padding:${sectionPadded ? '14px' : '18px'}">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;${sectionPadded ? 'padding:0 4px' : ''}">${sectionLabel}</div>
+      ${contentBlockHtml}
     </div>
     <div style="display:flex;gap:10px">
       <div class="card" style="flex:1;padding:14px;text-align:center">
@@ -654,6 +857,8 @@ function showLessonDetail(weekNo, prefix) {
       </div>
     </div>
   `;
+
+  if (ytId) initLessonYtPlayer(ytId);
 
   APP._lessonDetailPrefix = prefix;
   go('s-f-lesson-detail');
@@ -2340,9 +2545,21 @@ function updateSyncStatus(ok, msg, isInfo) {
 // WEEK DROPDOWNS
 // ═══════════════════════════════════════════
 function populateWeekDropdowns() {
-  const weekOptions = APP.lessons.map(l =>
-    `<option value="${l["Week No"]}"${Number(l["Week No"]) === APP.currentWeek ? ' selected' : ''}>Lesson ${l["Week No"]}${l["Lesson Title"] ? ' – ' + l["Lesson Title"] : ''}</option>`
-  ).join('');
+  // Attendance is recorded once per week (not per lesson), so dedupe down
+  // to one option per distinct Week No even though APP.lessons now has 2
+  // rows per week (one per lesson). Combine both lesson titles into the
+  // label so it's still clear which two lessons that week covers.
+  const weekMap = new Map();
+  APP.lessons.forEach(l => {
+    const wk = Number(l["Week No"]);
+    if (isNaN(wk)) return;
+    if (!weekMap.has(wk)) weekMap.set(wk, []);
+    if (l["Lesson Title"]) weekMap.get(wk).push(l["Lesson Title"]);
+  });
+  const weekOptions = Array.from(weekMap.keys()).sort((a, b) => a - b).map(wk => {
+    const titles = weekMap.get(wk).join(' & ');
+    return `<option value="${wk}"${wk === APP.currentWeek ? ' selected' : ''}>Week ${wk}${titles ? ' – ' + titles : ''}</option>`;
+  }).join('');
 
   const fWeek = document.getElementById('f-week-filter');
   if (fWeek && weekOptions) fWeek.innerHTML = weekOptions;
@@ -2358,9 +2575,21 @@ function populateWeekDropdowns() {
   if (rFacAtt && weekOptions) rFacAtt.innerHTML = weekOptions;
 
   const mkp = document.getElementById('makeup-week');
-  if (mkp && APP.lessons.length) {
+  if (mkp) {
+    let weekNumbers = (APP.lessons || [])
+      .map(l => Number(l["Week No"]))
+      .filter(n => !isNaN(n));
+    // Fallback: LESSON_WEEKS sheet is empty/unfilled — derive the week list
+    // from whatever weeks actually show up in the attendance records
+    // instead, so the dropdown is never left with zero options.
+    if (!weekNumbers.length) {
+      weekNumbers = (APP.attendance || [])
+        .map(a => Number(a["Week No"]))
+        .filter(n => !isNaN(n));
+    }
+    weekNumbers = Array.from(new Set(weekNumbers)).sort((a, b) => a - b);
     mkp.innerHTML = `<option value="0">All Weeks</option>` +
-      APP.lessons.map(l => `<option value="${l["Week No"]}">Week ${l["Week No"]} absences</option>`).join('');
+      weekNumbers.map(w => `<option value="${w}">Week ${w} absences</option>`).join('');
   }
 }
 

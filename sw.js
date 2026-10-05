@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sol1-v3'; // bumped so every phone purges old cached files (including any stale gameshow.html from before these fixes) on next load
+const CACHE_NAME = 'sol1-v4'; // bumped so every phone purges old cached files (including any stale gameshow.html from before these fixes) on next load
 const ASSETS = [
   '/',
   '/index.html',
