@@ -3054,7 +3054,9 @@ function showLedFrame(el, text, force) {
     el.classList.add('led-chunk-split', 'led-chunk-score');
     el.classList.remove('led-chunk-countdown', 'led-countdown-urgent');
   } else if (parts.length === 2) {
-    el.innerHTML = `<span class="led-line">${escapeHtml(parts[0])}</span><span class="led-line led-line-2">${escapeHtml(parts[1])}</span>`;
+    // Lines are built by layoutLedNameBlock() below — it wraps long team
+    // names onto 2-3 lines so the text can stay huge instead of shrinking
+    // to fit one long line.
     el.classList.add('led-chunk-split');
     el.classList.remove('led-chunk-score', 'led-chunk-countdown', 'led-countdown-urgent');
   } else {
@@ -3083,20 +3085,69 @@ function showLedFrame(el, text, force) {
       fitLedTextWidth(el.querySelector('.led-score-num'), maxWidth, Math.min(maxWidth * 0.34, maxHeight * 0.62));
       fitLedTextWidth(el.querySelector('.led-score-label'), maxWidth, Math.min(maxWidth * 0.09, maxHeight * 0.18));
     } else if (parts.length === 2) {
-      const line1 = el.querySelector('.led-line');
-      const line2 = el.querySelector('.led-line-2');
-      // The team name is the star of the screen — size it as large as
-      // the width/height budget allows...
-      fitLedTextWidth(line1, maxWidth, Math.min(maxWidth * 0.17, maxHeight * 0.42));
-      // ...then size "TABLE X" relative to whatever the name landed on,
-      // so the two lines stay visually balanced even after a long name
-      // has been scaled way down.
-      const line1Size = parseFloat(line1 && line1.style.fontSize) || (maxHeight * 0.42);
-      fitLedTextWidth(line2, maxWidth, Math.min(maxWidth * 0.11, maxHeight * 0.26, line1Size * 0.72));
+      layoutLedNameBlock(el, parts[0], parts[1], maxWidth, maxHeight);
     } else {
       fitLedTextWidth(el, maxWidth, Math.min(maxWidth * 0.2, maxHeight * 0.55));
     }
   }
+}
+
+
+// ── Team-name layout ──────────────────────────────────────────────
+// Splits a team name into k balanced lines (by word), minimising the
+// longest line so each line can be set as large as possible.
+function ledBalancedLines(words, k) {
+  let best = null;
+  (function rec(start, left, acc) {
+    if (left === 1) {
+      const lines = acc.concat([words.slice(start).join(' ')]);
+      const lens = lines.map(l => l.length);
+      const score = [Math.max(...lens), lens.reduce((a, b) => a + b * b, 0)];
+      if (!best || score[0] < best.score[0] || (score[0] === best.score[0] && score[1] < best.score[1])) best = { lines, score };
+      return;
+    }
+    for (let i = start + 1; i <= words.length - (left - 1); i++) {
+      rec(i, left - 1, acc.concat([words.slice(start, i).join(' ')]));
+    }
+  })(0, k, []);
+  return best ? best.lines : [words.join(' ')];
+}
+
+// Tries 1..4 lines for the team name, measures each against the real
+// board size, and keeps whichever layout gives the BIGGEST letters.
+// "TABLE X" sits underneath at ~60% of the name size.
+function layoutLedNameBlock(el, name, tableText, maxWidth, maxHeight) {
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  const LH = 1.1, TABLE_RATIO = 0.6, GAP = 12, MIN_PX = 12;
+  const build = lines => {
+    el.innerHTML = lines.map(l => `<span class="led-line">${escapeHtml(l)}</span>`).join('') +
+      `<span class="led-line led-line-2">${escapeHtml(tableText)}</span>`;
+    return [...el.querySelectorAll('.led-line')];
+  };
+  let best = null;
+  for (let k = 1; k <= Math.min(4, words.length || 1); k++) {
+    const lines = ledBalancedLines(words, k);
+    const spans = build(lines);
+    const nameSpans = spans.slice(0, -1), tableSpan = spans[spans.length - 1];
+    nameSpans.forEach(sp => { sp.style.fontSize = '100px'; });
+    tableSpan.style.fontSize = '100px';
+    const widest = Math.max(...nameSpans.map(sp => sp.scrollWidth));
+    const tableW = tableSpan.scrollWidth;
+    if (!widest) { best = null; break; } // board hidden — nothing to measure
+    const sizeW = 100 * maxWidth / widest;
+    const sizeH = (maxHeight * 0.94 - GAP) / (LH * (nameSpans.length + TABLE_RATIO));
+    // keep the table line inside the width too
+    const sizeT = tableW ? (100 * maxWidth / tableW) / TABLE_RATIO : Infinity;
+    const size = Math.min(sizeW, sizeH, sizeT, 420) * 0.97;
+    if (!best || size > best.size) best = { lines, size };
+  }
+  if (!best) { build([name]); return; }
+  const spans = build(best.lines);
+  const nameSize = Math.max(MIN_PX, best.size);
+  spans.slice(0, -1).forEach(sp => { sp.style.fontSize = nameSize + 'px'; sp.style.lineHeight = LH; });
+  const t = spans[spans.length - 1];
+  t.style.fontSize = Math.max(MIN_PX, nameSize * TABLE_RATIO) + 'px';
+  t.style.lineHeight = LH;
 }
 
 // The board's actual on-screen box (post the CSS rotate() that forces
@@ -3164,6 +3215,7 @@ function scheduleLedRefit() {
   LED_REFIT_TIMER = setTimeout(refitActiveLedChunks, 120);
 }
 window.addEventListener('resize', scheduleLedRefit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleLedRefit);
 window.addEventListener('orientationchange', scheduleLedRefit);
 
 // ═══════════════════════════════════════════
