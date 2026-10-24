@@ -2049,18 +2049,54 @@ async function scanQR(id) {
 async function scanFacultyQR(id) {
   const faculty = APP.faculty.find(f => String(f['Faculty ID']) === String(id));
   if (!faculty) return;
+
+  // ── Check if already scanned this week (stops duplicate rows) ─────────
+  const alreadyScanned = APP.facultyAttendance.find(a =>
+    String(a['Faculty ID'] || a['FacultyID']) === String(id) &&
+    String(a['Week No']) === String(APP.currentWeek)
+  );
+  if (alreadyScanned) {
+    const prevStatus = alreadyScanned['Status'] || 'Present';
+    setScanStatus('error', faculty['Full Name'] + ' already recorded as ' + prevStatus + ' this week');
+    const resultEl = document.getElementById('qr-result');
+    if (resultEl) resultEl.innerHTML = `
+      <div style="background:#fff3cd;padding:14px 16px;border-radius:12px;border-left:4px solid #e8a020;margin-top:8px;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:20px">⚠️</span>
+        <div><strong>${faculty['Full Name']}</strong><br><span style="font-size:12px;color:#666">Already recorded as <strong>${prevStatus}</strong> for Week ${APP.currentWeek}.</span></div>
+      </div>`;
+    showToast('⚠️ Already scanned — ' + faculty['Full Name']);
+    return;
+  }
+
   setScanStatus('scanning', 'Saving attendance for ' + faculty['Full Name'] + '…');
 
-  await apiPost({
-    action:'addQRScan', qrCode:String(faculty['Faculty ID']),
-    personType:'faculty', personId:faculty['Faculty ID'],
-    name:faculty['Full Name'], weekNo:APP.currentWeek, scanType:'attendance'
-  });
-  await apiPost({
-    action:'addFacultyAttendance', facultyId:faculty['Faculty ID'],
-    facultyName:faculty['Full Name'], role:faculty['Role']||'',
-    weekNo:APP.currentWeek, status:'Present'
-  });
+  // Record locally FIRST so a second scan of the same QR while the save is
+  // still in flight is blocked by the check above.
+  const localRow = {
+    'Faculty ID': faculty['Faculty ID'], 'Faculty Name': faculty['Full Name'],
+    'Role': faculty['Role'] || '', 'Week No': APP.currentWeek,
+    'Status': 'Present', 'Scan Time': new Date().toISOString()
+  };
+  APP.facultyAttendance.push(localRow);
+
+  try {
+    await apiPost({
+      action:'addQRScan', qrCode:String(faculty['Faculty ID']),
+      personType:'faculty', personId:faculty['Faculty ID'],
+      name:faculty['Full Name'], weekNo:APP.currentWeek, scanType:'attendance'
+    });
+    await apiPost({
+      action:'addFacultyAttendance', facultyId:faculty['Faculty ID'],
+      facultyName:faculty['Full Name'], role:faculty['Role']||'',
+      weekNo:APP.currentWeek, status:'Present'
+    });
+  } catch (e) {
+    // Save failed — remove the local row so they can scan again
+    APP.facultyAttendance = APP.facultyAttendance.filter(r => r !== localRow);
+    setScanStatus('error', 'Could not save — check connection and scan again');
+    showToast('⚠️ Save failed: ' + e.message);
+    return;
+  }
 
   setScanStatus('success', faculty['Full Name'] + ' (' + (faculty['Role']||'') + ') marked PRESENT ✓');
   const resultEl = document.getElementById('qr-result');
@@ -2074,6 +2110,9 @@ async function scanFacultyQR(id) {
       </div>
     </div>`;
   showToast('✅ ' + faculty['Full Name'] + ' — Present');
+
+  // Refresh from the sheet so the Faculty Attendance list shows the new row
+  await loadAllData();
 }
 
 // ═══════════════════════════════════════════
