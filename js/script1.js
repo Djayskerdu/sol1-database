@@ -1819,7 +1819,7 @@ function startQRCamera() {
     // square, so the QR doesn't need to be perfectly centered — just fully
     // visible somewhere in view. That's the most room we can give people
     // before the code gets cropped and becomes unreadable.
-    { facingMode: 'environment  ' },
+    { facingMode: 'user' },
     { fps: 20, aspectRatio: 1.0, disableFlip: true },
     onQRCodeScanned,
     (errorMsg) => {
